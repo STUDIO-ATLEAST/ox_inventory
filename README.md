@@ -1,5 +1,7 @@
 # ox_inventory, redesigned for Qbox
 
+![ox_inventory thumbnail](images/thumbnail.png)
+
 A redesigned ox_inventory for Qbox servers. It keeps everything the original inventory does and adds a three-column layout with Inventory, Crafting and Health tabs, equipment slots for a backpack, armour, phone and parachute, worn backpacks with a prop on the player, armour that lives in the vest item, crafting from anywhere, a new crafting station view and a shop with a basket and Cash or Card payment.
 
 This is a fork of [ox_inventory](https://github.com/overextended/ox_inventory) by [Overextended](https://github.com/overextended), version 2.48.1. All of the core inventory, item, stash, shop and weapon logic is their work. Please support the original project, and read its [documentation](https://overextended.dev/docs/ox_inventory) for everything this README does not cover.
