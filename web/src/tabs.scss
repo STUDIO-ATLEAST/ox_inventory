@@ -1,0 +1,1022 @@
+// Crafting / Health tabs and the centre column controls. Imported at the end of index.scss so it shares
+// its variables and mixins.
+
+// ---------------------------------------------------------------------------
+// Centre column controls (Use / amount / Give in one row)
+// ---------------------------------------------------------------------------
+
+.inventory-actions {
+  display: flex;
+  gap: 0.6vh;
+  height: 3.8vh;
+  margin-top: 1vh;
+}
+
+.amount-field {
+  flex: 0 0 11vh;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0 1vh;
+  border-radius: $radiusSm;
+  border: 1px solid $borderStrong;
+  background: $contentBg;
+  outline: none;
+  color: $white;
+  font-family: $mainFont;
+  font-size: 1.35vh;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  transition: border-color 0.15s ease;
+
+  &::placeholder {
+    color: $textDim;
+    font-size: 1.05vh;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  &:focus {
+    border-color: $blueBorder;
+  }
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: $radiusSm;
+  border: 1px solid $borderStrong;
+  background: $surface;
+  color: $textMuted;
+  font-family: $mainFont;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  svg {
+    width: 1.5vh;
+    height: 1.5vh;
+  }
+  &:active {
+    transform: none;
+  }
+}
+
+.action-button {
+  flex: 1;
+  gap: 0.7vh;
+  font-size: 1.15vh;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  &:hover {
+    @include tint($blue, $blueTint, $blueBorder);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared bits
+// ---------------------------------------------------------------------------
+
+.section-label {
+  margin: 1.4vh 0 0.8vh;
+  font-size: 1.1vh;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $textDim;
+}
+
+.empty-note {
+  padding: 2vh 0;
+  text-align: center;
+  font-size: 1.3vh;
+  color: $textDim;
+}
+
+.state-tag {
+  flex-shrink: 0;
+  padding: 0.35vh 0.8vh;
+  border-radius: $radiusSm;
+  border: 1px solid;
+  font-size: 1vh;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  &.ok {
+    @include tint($green, $greenTint, $greenBorder);
+  }
+  &.missing {
+    background: $surface;
+    border-color: $borderStrong;
+    color: $textDim;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Crafting tab
+// ---------------------------------------------------------------------------
+
+.recipe-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+}
+
+.recipe-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2vh;
+  flex-shrink: 0;
+  padding: 0.8vh;
+  border-radius: $radiusSm;
+  border: 1px solid $border;
+  background: $surface;
+  color: $text;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    background: $surfaceHover;
+  }
+  &.active {
+    background: $blueSubtle;
+    border-color: $blueBorder;
+  }
+  &:active {
+    transform: none;
+  }
+}
+
+.recipe-thumb,
+.ingredient-thumb,
+.injury-treat-thumb {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: $radiusSm;
+  background-color: $contentBg;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 80%;
+  border: 1px solid $border;
+}
+
+.recipe-thumb {
+  width: 5.6vh;
+  height: 5.6vh;
+}
+
+.recipe-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5vh;
+  flex: 1;
+  min-width: 0;
+}
+
+.recipe-name {
+  font-size: 1.5vh;
+  color: $white;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recipe-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5vh;
+  font-size: 1.15vh;
+  color: $textMuted;
+
+  svg {
+    width: 1.3vh;
+    height: 1.3vh;
+    color: $blue;
+  }
+}
+
+.recipe-yield {
+  flex-shrink: 0;
+  font-size: 1.3vh;
+  color: $blue;
+  font-variant-numeric: tabular-nums;
+}
+
+.recipe-detail {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vh;
+  margin-top: 1vh;
+  padding-top: 1vh;
+  border-top: 1px solid $border;
+}
+
+// recipe tiles, sized like the inventory slots
+.recipe-grid {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat($gridCols, $gridSize);
+  grid-auto-rows: $gridSize;
+  gap: $gridGap;
+  max-height: calc(2 * #{$gridSize} + #{$gridGap});
+  overflow-y: auto;
+}
+
+.recipe-tile {
+  position: relative;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: $radiusSm;
+  border: 1px solid $border;
+  background-color: $surface;
+  background-repeat: no-repeat;
+  background-position: center 45%;
+  background-size: 5.4vh;
+  cursor: pointer;
+  overflow: hidden;
+  filter: grayscale(100%) brightness(80%);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    filter 0.15s ease;
+
+  &.ready {
+    filter: none;
+    background-color: $headerBg;
+  }
+  &:hover {
+    background-color: $surfaceHover;
+  }
+  &.active {
+    filter: none;
+    border-color: $blue;
+    background-color: $blueSubtle;
+  }
+  &:active {
+    transform: none;
+  }
+}
+
+.recipe-tile-top {
+  position: absolute;
+  top: 0.5vh;
+  left: 0.5vh;
+  right: 0.5vh;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.1vh;
+  color: $text;
+
+  i {
+    width: 0.8vh;
+    height: 0.8vh;
+    border-radius: 1px;
+    background: #3a3c42;
+  }
+}
+
+.recipe-tile.ready .recipe-tile-top i {
+  background: $green;
+  box-shadow: 0 0 5px rgba(105, 219, 124, 0.6);
+}
+
+.recipe-tile-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 0.5vh 0.45vh;
+  font-size: 1.1vh;
+  color: $textMuted;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recipe-hero-name {
+  font-size: 1.7vh;
+  color: $white;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.recipe-hero {
+  display: flex;
+  gap: 1.4vh;
+  padding: 1.2vh;
+  border-radius: $radiusSm;
+  border: 1px solid $border;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(77, 171, 247, 0.08) 0%, transparent 60%),
+    $sidebarBg;
+}
+
+.recipe-hero-image {
+  flex-shrink: 0;
+  width: 8vh;
+  height: 8vh;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.recipe-hero-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6vh;
+  min-width: 0;
+}
+
+.recipe-hero-yield {
+  font-size: 1.4vh;
+  color: $textMuted;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  b {
+    font-weight: 400;
+    color: $blue;
+    margin-left: 0.3vh;
+  }
+}
+
+.recipe-hero-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6vh;
+  font-size: 1.3vh;
+  color: $text;
+
+  svg {
+    width: 1.5vh;
+    height: 1.5vh;
+    color: $blue;
+  }
+}
+
+.recipe-hero-desc {
+  font-size: 1.2vh;
+  line-height: 1.4;
+  color: $textMuted;
+}
+
+.ingredient-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+}
+
+.ingredient-row {
+  display: flex;
+  align-items: center;
+  gap: 1vh;
+  flex-shrink: 0;
+  padding: 0.6vh 1vh 0.6vh 0.6vh;
+  border-radius: $radiusSm;
+  border: 1px solid $border;
+  background: $surface;
+
+  &.short {
+    border-color: $redBorder;
+    background: $redTint;
+
+    .ingredient-count b,
+    .ingredient-state {
+      color: $red;
+    }
+  }
+}
+
+.ingredient-thumb {
+  width: 4.2vh;
+  height: 4.2vh;
+}
+
+.ingredient-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.35vh;
+  color: $text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ingredient-count {
+  font-size: 1.35vh;
+  color: $textMuted;
+  font-variant-numeric: tabular-nums;
+
+  b {
+    font-weight: 400;
+    color: $white;
+  }
+}
+
+.ingredient-state {
+  display: inline-flex;
+  color: $green;
+
+  svg {
+    width: 1.6vh;
+    height: 1.6vh;
+  }
+}
+
+.craft-actions {
+  display: flex;
+  gap: 0.8vh;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 4.4vh;
+  border-radius: $radiusSm;
+  border: 1px solid $borderStrong;
+  background: $surface;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4.2vh;
+    height: 100%;
+    border: none;
+    background: none;
+    color: $textMuted;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: $white;
+    }
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    svg {
+      width: 1.6vh;
+      height: 1.6vh;
+    }
+  }
+
+  span {
+    min-width: 3vh;
+    text-align: center;
+    font-size: 1.6vh;
+    color: $white;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.craft-button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8vh;
+  height: 4.4vh;
+  border-radius: $radiusSm;
+  border: 1px solid $greenBorder;
+  background: $greenTint;
+  color: $green;
+  font-size: 1.45vh;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+
+  svg {
+    width: 1.8vh;
+    height: 1.8vh;
+  }
+  &:hover:not(:disabled) {
+    background: #284030;
+  }
+  &:disabled {
+    border-color: $borderStrong;
+    background: $surface;
+    color: $textDim;
+    cursor: default;
+  }
+
+  // while crafting: green fill sweeps across, label stays readable on top
+  position: relative;
+  overflow: hidden;
+
+  &.busy:disabled {
+    border-color: $greenBorder;
+    background: $greenTint;
+    color: $white;
+  }
+}
+
+.craft-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #2b4d33;
+  box-shadow: inset -2px 0 0 $green;
+  transition: width 50ms linear;
+}
+
+.craft-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8vh;
+
+  em {
+    font-style: normal;
+    color: $green;
+  }
+  b {
+    font-weight: 400;
+    color: $green;
+    font-variant-numeric: tabular-nums;
+    min-width: 4vh;
+    text-align: right;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Health tab
+// ---------------------------------------------------------------------------
+
+$sev1: #ffd43b;
+$sev2: #ff922b;
+$sev3: #ff6b6b;
+
+.health-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: $radiusSm;
+  border: 1px solid $border;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(77, 171, 247, 0.08) 0%, transparent 65%),
+    $sidebarBg;
+}
+
+.health-body {
+  position: absolute;
+  inset: 4% 0 7%;
+  width: 100%;
+  height: 89%;
+  // callout labels sit beside the figure, outside the viewBox
+  overflow: visible;
+}
+
+.body-callout {
+  --sev: #{$sev1};
+  pointer-events: none;
+
+  &.sev-2 {
+    --sev: #{$sev2};
+  }
+  &.sev-3,
+  &.bleed {
+    --sev: #{$sev3};
+  }
+
+  polyline {
+    fill: none;
+    stroke: var(--sev);
+    stroke-width: 0.6;
+    opacity: 0.7;
+  }
+  text {
+    font-family: $mainFont;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .callout-part {
+    font-size: 6px;
+    fill: $white;
+  }
+  .callout-wound {
+    font-size: 4.4px;
+    fill: var(--sev);
+  }
+  &.hover polyline {
+    opacity: 1;
+    stroke-width: 0.9;
+  }
+}
+
+.body-marker {
+  cursor: default;
+
+  rect {
+    fill: #3a3c42;
+    stroke: $sidebarBg;
+    stroke-width: 0.8;
+    transition: fill 0.15s ease;
+  }
+  &.sev-1 rect {
+    fill: $sev1;
+  }
+  &.sev-2 rect {
+    fill: $sev2;
+  }
+  &.sev-3 rect,
+  &.bleed rect {
+    fill: $sev3;
+  }
+  &.sev-0.hover rect {
+    fill: $textMuted;
+  }
+  &.hover rect:not(.body-marker-pulse) {
+    stroke: $white;
+  }
+
+  .body-marker-pulse {
+    fill: none !important;
+    stroke: $sev3 !important;
+    stroke-width: 0.8;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: marker-pulse 1.2s ease-out infinite;
+  }
+}
+
+@keyframes marker-pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.health-hover {
+  position: absolute;
+  left: 1vh;
+  top: 1vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3vh;
+  padding: 0.7vh 1vh;
+  border-radius: $radiusSm;
+  background: $panelBg;
+  border: 1px solid $borderStrong;
+  font-size: 1.3vh;
+  color: $white;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  span {
+    font-size: 1.15vh;
+    color: $textMuted;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+.health-legend {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.8vh;
+  display: flex;
+  justify-content: center;
+  gap: 1.6vh;
+  pointer-events: none;
+}
+
+// five vitals in one row above the body
+.vital-strip {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.6vh;
+  margin-bottom: 1vh;
+}
+
+.vital-mini {
+  @extend .vital-row;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5vh;
+  padding: 0.6vh;
+  border-radius: $radiusSm;
+  border: 1px solid $border;
+  background: $surface;
+
+  .vital-chip {
+    width: 2.8vh;
+    height: 2.8vh;
+
+    svg {
+      width: 1.5vh;
+      height: 1.5vh;
+    }
+  }
+  .vital-digits {
+    font-size: 1.6vh;
+  }
+  .vital-track {
+    width: 100%;
+  }
+}
+
+.vital-mini-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.injury-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1vh;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6vh;
+  font-size: 1.1vh;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $textMuted;
+
+  i {
+    box-sizing: border-box;
+    width: 1vh;
+    height: 1vh;
+    border-radius: 1px;
+  }
+  &.sev-1 i {
+    background: $sev1;
+  }
+  &.sev-2 i {
+    background: $sev2;
+  }
+  &.sev-3 i {
+    background: $sev3;
+  }
+  &.bleed i {
+    background: none;
+    border: 1px solid $sev3;
+  }
+}
+
+.vital-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+}
+
+.vital-row {
+  --tone: #{$blue};
+  --tone-bg: #{$blueTint};
+  --tone-line: #{$blueBorder};
+  display: flex;
+  align-items: center;
+  gap: 1.2vh;
+
+  &.tone-red {
+    --tone: #{$red};
+    --tone-bg: #{$redTint};
+    --tone-line: #{$redBorder};
+  }
+  &.tone-yellow {
+    --tone: #ffd43b;
+    --tone-bg: #36311e;
+    --tone-line: #5c5124;
+  }
+  &.tone-cyan {
+    --tone: #66d9e8;
+    --tone-bg: #1c3235;
+    --tone-line: #285459;
+  }
+  &.tone-violet {
+    --tone: #da77f2;
+    --tone-bg: #322539;
+    --tone-line: #533a5e;
+  }
+}
+
+.vital-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 4.2vh;
+  height: 4.2vh;
+  border-radius: $radiusSm;
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-line);
+  color: var(--tone);
+
+  svg {
+    width: 2vh;
+    height: 2vh;
+  }
+}
+
+.vital-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+}
+
+.vital-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.vital-label {
+  font-size: 1.3vh;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: $text;
+}
+
+.vital-digits {
+  display: inline-block;
+  font-size: 1.9vh;
+  color: $white;
+  font-variant-numeric: tabular-nums;
+  transform: skewX(-9deg);
+
+  .dim {
+    color: #373a40;
+  }
+}
+
+.vital-track {
+  height: 0.5vh;
+  border-radius: 1px;
+  background: $contentBg;
+  overflow: hidden;
+
+  > div {
+    height: 100%;
+    background: var(--tone);
+    box-shadow: 0 0 6px var(--tone);
+    transition: width 0.4s ease;
+  }
+}
+
+.injury-list {
+  flex-shrink: 0;
+  max-height: 17vh;
+  margin-top: 1vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vh;
+}
+
+.injury-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8vh;
+  padding: 1.4vh 0;
+  border-radius: $radiusSm;
+  border: 1px solid $greenBorder;
+  background: $greenTint;
+  color: $green;
+  font-size: 1.3vh;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  svg {
+    width: 1.8vh;
+    height: 1.8vh;
+  }
+}
+
+.injury-row {
+  --sev: #{$sev1};
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4vh;
+  padding: 0.7vh 1vh;
+  border-radius: $radiusSm;
+  border: 1px solid $border;
+  border-left: 3px solid var(--sev);
+  background: $surface;
+  transition: background-color 0.15s ease;
+
+  &.sev-2 {
+    --sev: #{$sev2};
+  }
+  &.sev-3,
+  &.bleed {
+    --sev: #{$sev3};
+  }
+  &.hover {
+    background: $surfaceHover;
+  }
+}
+
+.injury-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1vh;
+}
+
+.injury-part {
+  font-size: 1.45vh;
+  color: $white;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.injury-tag {
+  font-size: 1vh;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sev);
+}
+
+.injury-wound {
+  font-size: 1.25vh;
+  color: $text;
+
+  span {
+    color: $textMuted;
+  }
+}
+
+.injury-treat {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.7vh;
+  font-size: 1.15vh;
+  color: $textMuted;
+
+  b {
+    font-weight: 400;
+    color: $blue;
+  }
+}
+
+.injury-treat-thumb {
+  width: 2.6vh;
+  height: 2.6vh;
+}
+
+// ---------------------------------------------------------------------------
+// Hotbar 1-5 under the character: keybind number inside the empty slot
+// ---------------------------------------------------------------------------
+
+.hotbar-key {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.4vh;
+  line-height: 1;
+  color: #34363c;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.inventory-slot:hover .hotbar-key {
+  color: $textDim;
+}
+
+.inventory-slot.is-over .hotbar-key {
+  color: $white;
+}

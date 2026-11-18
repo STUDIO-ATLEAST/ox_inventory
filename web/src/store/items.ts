@@ -1,0 +1,40 @@
+import { ItemData } from '../typings/item';
+
+export const Items: {
+  [key: string]: ItemData | undefined;
+} = {
+  // browser dev fixtures, overwritten by the init event in game
+  'WEAPON_PISTOL': { name: 'WEAPON_PISTOL', label: 'Pistol', stack: false, usable: true, close: false, count: 0 },
+  'tablet': { name: 'tablet', label: 'Tablet', stack: false, usable: true, close: false, count: 0 },
+  'laptop': { name: 'laptop', label: 'Laptop', stack: false, usable: true, close: false, count: 0 },
+  'bandage': { name: 'bandage', label: 'Bandage', stack: true, usable: true, close: false, count: 0 },
+  'ammo-9': { name: 'ammo-9', label: '9mm Ammo', stack: true, usable: true, close: false, count: 0 },
+  'firstaid': { name: 'firstaid', label: 'First Aid', stack: true, usable: true, close: false, count: 0 },
+  'painkillers': { name: 'painkillers', label: 'Painkillers', stack: true, usable: true, close: false, count: 0 },
+  'water': { name: 'water', label: 'Water', stack: true, usable: true, close: false, count: 0 },
+  'sandwich': { name: 'sandwich', label: 'Sandwich', stack: true, usable: true, close: false, count: 0 },
+  'sprunk': { name: 'sprunk', label: 'Sprunk', stack: true, usable: true, close: false, count: 0 },
+  'lockpick': { name: 'lockpick', label: 'Lockpick', stack: true, usable: true, close: false, count: 0 },
+  'phone': { name: 'phone', label: 'Phone', stack: false, usable: true, close: false, count: 0 },
+  'armour': { name: 'armour', label: 'Body Armor', stack: true, usable: true, close: false, count: 0 },
+  'veh_engine': { name: 'veh_engine', label: 'Engine Upgrade', stack: false, usable: true, close: false, count: 0 },
+  'veh_turbo': { name: 'veh_turbo', label: 'Turbo Upgrade', stack: false, usable: true, close: false, count: 0 },
+  'veh_suspension': { name: 'veh_suspension', label: 'Suspension Upgrade', stack: false, usable: true, close: false, count: 0 },
+  'parachute': { name: 'parachute', label: 'Parachute', stack: false, usable: true, close: false, count: 0 },
+  'backpack': { name: 'backpack', label: 'Backpack', stack: false, usable: true, close: false, count: 0 },
+  'fabric': { name: 'fabric', label: 'Fabric', stack: true, usable: true, close: false, count: 0 },
+  'rubber': { name: 'rubber', label: 'Rubber', stack: true, usable: true, close: false, count: 0 },
+  'wood_planks': { name: 'wood_planks', label: 'Wood Planks', stack: true, usable: true, close: false, count: 0 },
+  'duct_tape': { name: 'duct_tape', label: 'Duct Tape', stack: true, usable: true, close: false, count: 0 },
+  'scrap_metal': { name: 'scrap_metal', label: 'Scrap Metal', stack: true, usable: true, close: false, count: 0 },
+  'metal_parts': { name: 'metal_parts', label: 'Metal Parts', stack: true, usable: true, close: false, count: 0 },
+  'plastic': { name: 'plastic', label: 'Plastic', stack: true, usable: true, close: false, count: 0 },
+  'electronic_parts': { name: 'electronic_parts', label: 'Electronic Parts', stack: true, usable: true, close: false, count: 0 },
+  'copper_coil': { name: 'copper_coil', label: 'Copper Coil', stack: true, usable: true, close: false, count: 0 },
+  'gauze': { name: 'gauze', label: 'Gauze', stack: true, usable: true, close: false, count: 0 },
+  'tourniquet': { name: 'tourniquet', label: 'Tourniquet', stack: true, usable: true, close: false, count: 0 },
+  'splint': { name: 'splint', label: 'Splint', stack: true, usable: true, close: false, count: 0 },
+  'advancedlockpick': { name: 'advancedlockpick', label: 'Advanced Lockpick', stack: true, usable: true, close: false, count: 0 },
+  'radio': { name: 'radio', label: 'Radio', stack: true, usable: true, close: false, count: 0 },
+  'burger': { name: 'burger', label: 'Burger', stack: true, usable: true, close: false, count: 0 },
+};
