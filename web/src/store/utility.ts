@@ -14,14 +14,20 @@ export interface UtilityConfig {
   backpackItems: string[];
   weaponSlots: number[];
   equipment: EquipmentSlot[];
+  // Crafting / Health tabs next to Inventory (data/utility.lua tabs); with both off there is no top bar
+  tabs: { crafting: boolean; health: boolean };
 }
 
 // browser dev defaults for a 50 slot inventory, overwritten by the init event in game
 // (matches data/utility.lua, which runs 'utility' in game; add ?mode=classic to the dev URL for the plain layout)
 const devUtility = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') !== 'classic';
 
+// browser preview: ?notabs=crafting, ?notabs=health or ?notabs=crafting,health
+const devNoTabs = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('notabs') || '' : '';
+
 export const Utility: UtilityConfig = {
   mode: devUtility ? 'utility' : 'classic',
+  tabs: { crafting: devUtility && !devNoTabs.includes('crafting'), health: devUtility && !devNoTabs.includes('health') },
   backpackItems: ['backpack'],
   weaponSlots: devUtility ? [1, 2] : [],
   equipment: devUtility
@@ -45,6 +51,11 @@ export const setUtility = (config?: Partial<UtilityConfig>) => {
   else if (config.weaponSlots) Utility.weaponSlots = [];
   if (Array.isArray(config.equipment)) Utility.equipment = config.equipment;
   else if (config.equipment) Utility.equipment = [];
+  const utility = Utility.mode === 'utility';
+  Utility.tabs = {
+    crafting: utility && config.tabs?.crafting !== false,
+    health: utility && config.tabs?.health !== false,
+  };
 };
 
 const isWeapon = (name: string) => name.toUpperCase().startsWith('WEAPON_');

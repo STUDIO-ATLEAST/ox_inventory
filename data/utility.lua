@@ -4,6 +4,18 @@ return {
     -- 'utility': adds the Utility tab with a character panel, weapon slots and equipment slots (settings below).
     mode = 'utility',
 
+    -- Tabs shown next to Inventory in the top bar ('utility' mode only).
+    -- Set one to false to remove that tab. With both off, the top bar is hidden and Q / E do nothing.
+    tabs = {
+        crafting = true,
+        health = true,
+    },
+
+    -- Where the Health tab reads injuries from:
+    -- 'auto' uses rm-medical when it is running, otherwise qbx_medical (the default Qbox medical resource).
+    -- 'qbx_medical' or 'rm-medical' always uses that one.
+    medical = 'auto',
+
     -- Container items treated as a worn backpack. In 'classic' mode the first one carried anywhere in the pockets
     -- opens next to the ground on TAB; in 'utility' mode it has to sit in the backpack equipment slot.
     backpackItems = { 'backpack_small', 'backpack_medium', 'backpack_large' },

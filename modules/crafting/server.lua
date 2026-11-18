@@ -3,6 +3,10 @@ if not lib then return end
 local CraftingBenches = {}
 local Items = require 'modules.items.server'
 local Inventory = require 'modules.inventory.server'
+local Utility = require 'modules.utility.shared'
+
+-- the bench behind the inventory's Crafting tab; refused when that tab is turned off in data/utility.lua
+local PERSONAL_BENCH = 'personal'
 
 ---@param id number | string
 ---@param data table
@@ -101,6 +105,7 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 	local left, bench = Inventory(source), CraftingBenches[id]
 
 	if not left then return end
+	if id == PERSONAL_BENCH and not Utility.tabs.crafting then return end
 
 	if bench then
 		local groups = getCraftingGroups(bench, index)

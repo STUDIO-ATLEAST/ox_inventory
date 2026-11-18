@@ -61,9 +61,13 @@ Crafting benches placed in the world with `points` or `zones` in `data/crafting.
 
 The Health tab draws a body figure with a square marker and a callout label on every injured body part, plus a list of the injuries with their severity, whether the part is bleeding and the item that treats it.
 
-The injuries come from a resource named `rm-medical`. Without it, the tab shows a short note that injury tracking is not available.
+The injuries come from [qbx_medical](https://github.com/Qbox-project/qbx_medical), the medical resource that ships with Qbox, so the tab works out of the box. qbx_medical tracks 15 body parts. The tab groups them into seven areas and shows the worst wound in each, for example "Painful (left hand)" on the left arm. qbx_medical keeps one bleed level for the whole body, so bleeding is shown on the most injured area, or on the chest when nothing else is hurt. Bleeding points to the `bandage` item and other wounds to `painkillers`, when those items exist. A player in last stand or dead shows as Unresponsive.
 
-The tab calls the client export `exports['rm-medical']:GetInjuries()`, so any medical script can feed it by using that resource name and returning a list of body parts in this shape.
+When no supported medical resource is running, the tab shows a short note that injury tracking is not available. You can also turn the tab off, see `tabs` under Configuration.
+
+#### Using another medical script
+
+Set `medical` in `data/utility.lua` to `'rm-medical'`, or leave it on `'auto'`, and the tab calls the client export `exports['rm-medical']:GetInjuries()` instead. Any medical script can feed the tab by using that resource name and returning a list of body parts in this shape.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -96,7 +100,7 @@ License, job grade and stock checks work as in the original shops. The `buyItem`
 | [oxmysql](https://github.com/overextended/oxmysql) | Yes | |
 | OneSync and server artifact 6116 or newer | Yes | Same as the original ox_inventory |
 | [ox_target](https://github.com/overextended/ox_target) | Optional | Only when `inventory:target` is enabled |
-| rm-medical | Optional | Injuries in the Health tab |
+| [qbx_medical](https://github.com/Qbox-project/qbx_medical) | Optional | Injuries in the Health tab. Comes with Qbox. |
 
 This fork is built and tested on Qbox only. The bridges for other frameworks from the original resource are still in the code, but the card payment relies on qbx_core.
 
@@ -120,6 +124,8 @@ The layout and the new features are configured in `data/utility.lua`. The file i
 | Option | Default | Description |
 | --- | --- | --- |
 | `mode` | `'utility'` | `'utility'` gives the three-column layout with tabs, the character panel, weapon slots and equipment slots. `'classic'` keeps the original style: the hotbar is slots 1 to 5, there are no reserved slots and no tabs. |
+| `tabs` | `{ crafting = true, health = true }` | Turns the Crafting and Health tabs on or off. With both off, the top bar is hidden and Q and E do nothing, so the inventory opens straight to the three columns. Turning off crafting also blocks the personal bench on the server. Utility mode only. |
+| `medical` | `'auto'` | Where the Health tab reads injuries from. `'auto'` uses rm-medical when it runs and qbx_medical otherwise. `'qbx_medical'` or `'rm-medical'` always uses that one. |
 | `backpackItems` | three backpacks | Container items treated as a worn bag. In utility mode the bag must sit in the backpack slot. In classic mode the first bag carried anywhere in the pockets is used. |
 | `backpackProps` | one entry per bag | Prop shown on the back for each bag item, as `{ model, offset, rotation }`. |
 | `backpackBone` | `24818` | Ped bone the prop is attached to (SKEL_Spine3). |
@@ -151,9 +157,13 @@ The table below lists where this fork differs from ox_inventory 2.48.1, as the l
 | Worn vest and worn backpack | `modules/utility/client.lua`, `modules/utility/server.lua` (new), `modules/items/client.lua`, `modules/items/containers.lua` |
 | Crafting tab, crafting station, Health tab and bank balance callbacks | `client.lua` |
 | Card payments in shops | `modules/shops/server.lua` |
-| Personal crafting bench | `data/crafting.lua` |
+| Personal crafting bench, and the server check that blocks it when the Crafting tab is off | `data/crafting.lua`, `modules/crafting/server.lua` |
 | New text | `locales/en.json` |
 | Redesigned UI | `web/src` and the built files in `web/build` |
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

@@ -22,7 +22,7 @@ import CraftingStation from './CraftingStation';
 import { useAppSelector } from '../../store';
 import { selectRightInventory } from '../../store/inventory';
 import { Locale } from '../../store/locale';
-import { isUtilityMode } from '../../store/utility';
+import { isUtilityMode, Utility } from '../../store/utility';
 import { isEnvBrowser } from '../../utils/misc';
 
 type Tab = 'inventory' | 'crafting' | 'health';
@@ -36,10 +36,14 @@ const TABS: { id: Tab; icon: LucideIcon; locale: string; label: string }[] = [
 const Inventory: React.FC = () => {
   const [inventoryVisible, setInventoryVisible] = useState(false);
   // browser preview can start on a tab with ?tab=crafting / ?tab=health
+  // tabs turned off in data/utility.lua are left out; with only Inventory left the top bar is hidden
+  const tabs = TABS.filter((entry) => entry.id === 'inventory' || Utility.tabs[entry.id]);
+  const showTabs = tabs.length > 1;
   const [tab, setTab] = useState<Tab>(() => {
     const wanted = isEnvBrowser() ? new URLSearchParams(window.location.search).get('tab') : null;
     return TABS.some((entry) => entry.id === wanted) ? (wanted as Tab) : 'inventory';
   });
+  const activeTab: Tab = tabs.some((entry) => entry.id === tab) ? tab : 'inventory';
   const { stacked } = useBackpackLayout();
   // shops and crafting benches get their own view across the centre and right columns
   const rightType = useAppSelector(selectRightInventory).type;
@@ -75,7 +79,7 @@ const Inventory: React.FC = () => {
 
   // Q / E step through the tabs, like the keycaps beside them show
   useEffect(() => {
-    if (!inventoryVisible || !utility || wide) return;
+    if (!inventoryVisible || !utility || wide || !showTabs) return;
 
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -84,30 +88,30 @@ const Inventory: React.FC = () => {
       if (key !== 'q' && key !== 'e') return;
 
       setTab((current) => {
-        const index = TABS.findIndex((entry) => entry.id === current);
-        const next = (index + (key === 'e' ? 1 : TABS.length - 1)) % TABS.length;
-        return TABS[next].id;
+        const index = Math.max(0, tabs.findIndex((entry) => entry.id === current));
+        const next = (index + (key === 'e' ? 1 : tabs.length - 1)) % tabs.length;
+        return tabs[next].id;
       });
     };
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [inventoryVisible, utility, wide]);
+  }, [inventoryVisible, utility, wide, showTabs, tabs.length]);
 
   const stackClass = stacked ? ' stacked' : '';
 
   return (
     <>
       <Fade in={inventoryVisible}>
-        <div className={`inventory-wrapper${utility ? ' layout-utility' : ''}`}>
-          {utility && (
+        <div className={`inventory-wrapper${utility ? ' layout-utility' : ''}${utility && !showTabs ? ' no-tabs' : ''}`}>
+          {utility && showTabs && (
             <header className="inventory-topbar">
               <nav className="inventory-tabs" style={wide ? { visibility: 'hidden' } : undefined}>
                 <span className="tab-key">Q</span>
-                {TABS.map(({ id, icon: Icon, locale, label }) => (
+                {tabs.map(({ id, icon: Icon, locale, label }) => (
                   <button
                     key={id}
-                    className={`inventory-tab${tab === id ? ' active' : ''}`}
+                    className={`inventory-tab${activeTab === id ? ' active' : ''}`}
                     onClick={() => setTab(id)}
                   >
                     <Icon />
@@ -136,7 +140,7 @@ const Inventory: React.FC = () => {
                 // both inventories stay put, only the centre column swaps with the tab
                 <>
                   <div className="inventory-panel panel-center">
-                    {tab === 'inventory' ? <CharacterPanel /> : tab === 'crafting' ? <CraftingTab /> : <HealthTab />}
+                    {activeTab === 'inventory' ? <CharacterPanel /> : activeTab === 'crafting' ? <CraftingTab /> : <HealthTab />}
                   </div>
                   <div className="inventory-panel panel-right">
                     <RightInventory />

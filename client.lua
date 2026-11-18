@@ -1393,6 +1393,7 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 				backpackItems = Utility.backpackItems,
 				weaponSlots = Utility.weaponSlots,
 				equipment = Utility.equipment,
+				tabs = Utility.tabs,
 			},
 		}
 	})
@@ -1835,18 +1836,99 @@ RegisterNUICallback('exit', function(_, cb)
 	cb(1)
 end)
 
--- Health tab: vitals plus the injuries rm-medical records per body part
+-- Health tab: vitals plus injuries per body part, from rm-medical or qbx_medical (data/utility.lua `medical`)
+
+-- qbx_medical keeps one statebag per GTA body part; the tab groups them into its seven body areas
+local QBX_PARTS = {
+	{ id = 'head', label = 'Head', keys = { HEAD = 'Head', NECK = 'Neck' } },
+	{ id = 'chest', label = 'Chest', keys = { UPPER_BODY = 'Upper body', SPINE = 'Spine' } },
+	{ id = 'abdomen', label = 'Abdomen', keys = { LOWER_BODY = 'Lower body' } },
+	{ id = 'left_arm', label = 'Left arm', keys = { LARM = 'Left arm', LHAND = 'Left hand', LFINGER = 'Left fingers' } },
+	{ id = 'right_arm', label = 'Right arm', keys = { RARM = 'Right arm', RHAND = 'Right hand', RFINGER = 'Right fingers' } },
+	{ id = 'left_leg', label = 'Left leg', keys = { LLEG = 'Left leg', LFOOT = 'Left foot' } },
+	{ id = 'right_leg', label = 'Right leg', keys = { RLEG = 'Right leg', RFOOT = 'Right foot' } },
+}
+
+-- qbx_medical wound levels 1-4 and bleed levels 1-4
+local QBX_WOUNDS = { 'Irritated', 'Quite painful', 'Painful', 'Really painful' }
+local QBX_BLEEDS = { 'Light bleeding', 'Bleeding', 'Heavy bleeding', 'Severe bleeding' }
+
+---@param name string
+---@return string?, string?
+local function treatment(name)
+	local item = Items[name]
+	if item then return name, item.label end
+end
+
+---Injuries from qbx_medical's player statebags, in the shape the Health tab uses.
+---qbx_medical only tracks one bleed level for the whole body, so it is shown on the worst injured area.
+local function getQbxInjuries()
+	local state = LocalPlayer.state
+	local bleed = tonumber(state['qbx_medical:bleedLevel']) or 0
+	local parts, worst = {}, nil
+
+	for i = 1, #QBX_PARTS do
+		local area = QBX_PARTS[i]
+		local level, where = 0, nil
+
+		for key, label in pairs(area.keys) do
+			local injury = state['qbx_medical:injuries:' .. key]
+			local severity = type(injury) == 'table' and tonumber(injury.severity) or 0
+
+			if severity > level then level, where = severity, label end
+		end
+
+		local part = { id = area.id, label = area.label, severity = math.min(level, 3) }
+
+		if level > 0 then
+			local wound = QBX_WOUNDS[math.min(level, 4)]
+			part.kind = 'trauma'
+			part.wound = where ~= area.label and ('%s (%s)'):format(wound, where:lower()) or wound
+			part.item, part.itemLabel = treatment('painkillers')
+			if not worst or part.severity > worst.severity then worst = part end
+		end
+
+		parts[i] = part
+	end
+
+	if bleed > 0 then
+		-- bleeding with no injured area left (e.g. after a partial heal) goes on the chest
+		local part = worst or parts[2]
+		part.bleeding = true
+		part.kind = 'bleeding'
+		part.severity = math.max(part.severity, math.min(bleed, 3))
+		if part.wound then part.after = part.wound end
+		part.wound = QBX_BLEEDS[math.min(bleed, 4)]
+		part.item, part.itemLabel = treatment('bandage')
+	end
+
+	return parts
+end
+
+---@return table | false
+local function getInjuries()
+	local source = Utility.medical
+
+	if source ~= 'qbx_medical' and GetResourceState('rm-medical') == 'started' then
+		local found, parts = pcall(function() return exports['rm-medical']:GetInjuries() end)
+		if found and parts then return parts end
+	end
+
+	if source ~= 'rm-medical' and GetResourceState('qbx_medical') == 'started' then
+		return getQbxInjuries()
+	end
+
+	return false
+end
+
 RegisterNUICallback('getHealth', function(_, cb)
+	if not Utility.tabs.health then return cb(false) end
+
 	local ped = cache.ped
 	local maxHealth = GetEntityMaxHealth(ped) - 100
 	local ok, data = pcall(function() return exports.qbx_core:GetPlayerData() end)
 	local metadata = ok and data and data.metadata or {}
-	local injuries = false
-
-	if GetResourceState('rm-medical') == 'started' then
-		local found, parts = pcall(function() return exports['rm-medical']:GetInjuries() end)
-		injuries = found and parts or false
-	end
+	local deathState = tonumber(LocalPlayer.state['qbx_medical:deathState']) or 1
 
 	cb({
 		health = maxHealth > 0 and math.floor(math.max(0, GetEntityHealth(ped) - 100) / maxHealth * 100 + 0.5) or 0,
@@ -1854,8 +1936,8 @@ RegisterNUICallback('getHealth', function(_, cb)
 		hunger = math.floor((metadata.hunger or LocalPlayer.state.hunger or 100) + 0.5),
 		thirst = math.floor((metadata.thirst or LocalPlayer.state.thirst or 100) + 0.5),
 		stress = math.floor((metadata.stress or LocalPlayer.state.stress or 0) + 0.5),
-		down = metadata.isdead or metadata.inlaststand or LocalPlayer.state.dead or LocalPlayer.state.laststand or false,
-		injuries = injuries,
+		down = deathState > 1 or metadata.isdead or metadata.inlaststand or LocalPlayer.state.dead or LocalPlayer.state.laststand or false,
+		injuries = getInjuries(),
 	})
 end)
 
@@ -1863,6 +1945,8 @@ end)
 local PERSONAL_BENCH = 'personal'
 
 RegisterNUICallback('getCrafting', function(_, cb)
+	if not Utility.tabs.crafting then return cb({}) end
+
 	local bench = CraftingBenches[PERSONAL_BENCH]
 	local recipes = {}
 
@@ -1891,7 +1975,7 @@ RegisterNUICallback('craftPersonal', function(data, cb)
 
 	local bench = CraftingBenches[PERSONAL_BENCH]
 
-	if not invOpen or not recipe or not bench or not bench.items or not bench.items[recipe] then return cb(false) end
+	if not Utility.tabs.crafting or not invOpen or not recipe or not bench or not bench.items or not bench.items[recipe] then return cb(false) end
 	if cache.vehicle then
 		lib.notify({ id = 'cannot_perform', type = 'error', description = locale('cannot_perform') })
 		return cb(false)

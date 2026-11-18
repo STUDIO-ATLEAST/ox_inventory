@@ -11,6 +11,12 @@ local isUtilityMode = config.mode == 'utility'
 local Utility = {
     mode = isUtilityMode and 'utility' or 'classic',
     backpackItems = config.backpackItems or { 'backpack' },
+    -- Crafting and Health tabs; both are off in 'classic' mode, which has no top bar
+    tabs = {
+        crafting = isUtilityMode and config.tabs?.crafting ~= false,
+        health = isUtilityMode and config.tabs?.health ~= false,
+    },
+    medical = config.medical or 'auto',
     -- classic mode has no restricted slots at all
     weaponSlots = isUtilityMode and config.weaponSlots or {},
     ---@type UtilitySlot[]
