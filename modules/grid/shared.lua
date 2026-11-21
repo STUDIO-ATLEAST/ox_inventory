@@ -128,6 +128,11 @@ function Grid.itemSize(name)
     local item = ItemList[name] or ItemList[lower]
     local w, h = readSize(item and item.size)
 
+    -- items that already carry width / height fields (atleastv4 item lists)
+    if not w and item and tonumber(item.width) and tonumber(item.height) then
+        w, h = math.floor(item.width), math.floor(item.height)
+    end
+
     if not w then w, h = readSize(sizeOverrides[lower]) end
 
     if not w then

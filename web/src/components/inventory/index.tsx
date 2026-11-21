@@ -13,10 +13,11 @@ import { closeTooltip } from '../../store/tooltip';
 import InventoryContext from './InventoryContext';
 import { closeContextMenu } from '../../store/contextMenu';
 import Fade from '../utils/transitions/Fade';
-import { Hammer, HeartPulse, LayoutGrid, LucideIcon } from 'lucide-react';
+import { Hammer, HeartPulse, LayoutGrid, LucideIcon, Shirt } from 'lucide-react';
 import CharacterPanel from './CharacterPanel';
 import CraftingTab from './CraftingTab';
 import HealthTab from './HealthTab';
+import ClothingTab from './ClothingTab';
 import ShopView from './ShopView';
 import CraftingStation from './CraftingStation';
 import { useAppSelector } from '../../store';
@@ -25,10 +26,12 @@ import { Locale } from '../../store/locale';
 import { isUtilityMode, Utility } from '../../store/utility';
 import { isEnvBrowser } from '../../utils/misc';
 
-type Tab = 'inventory' | 'crafting' | 'health';
+type Tab = 'inventory' | 'clothing' | 'crafting' | 'health';
 
 const TABS: { id: Tab; icon: LucideIcon; locale: string; label: string }[] = [
   { id: 'inventory', icon: LayoutGrid, locale: 'ui_inventory', label: 'Inventory' },
+  // data/clothing.lua, off unless turned on there
+  { id: 'clothing', icon: Shirt, locale: 'ui_clothing', label: 'Clothing' },
   { id: 'crafting', icon: Hammer, locale: 'ui_crafting', label: 'Crafting' },
   { id: 'health', icon: HeartPulse, locale: 'ui_health', label: 'Health' },
 ];
@@ -140,7 +143,15 @@ const Inventory: React.FC = () => {
                 // both inventories stay put, only the centre column swaps with the tab
                 <>
                   <div className="inventory-panel panel-center">
-                    {activeTab === 'inventory' ? <CharacterPanel /> : activeTab === 'crafting' ? <CraftingTab /> : <HealthTab />}
+                    {activeTab === 'inventory' ? (
+                      <CharacterPanel />
+                    ) : activeTab === 'clothing' ? (
+                      <ClothingTab />
+                    ) : activeTab === 'crafting' ? (
+                      <CraftingTab />
+                    ) : (
+                      <HealthTab />
+                    )}
                   </div>
                   <div className="inventory-panel panel-right">
                     <RightInventory />

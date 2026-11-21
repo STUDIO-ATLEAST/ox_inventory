@@ -244,6 +244,8 @@ end
 
 -- grid inventory (data/grid.lua) sets the player slot count, so it has to load before anything reads it
 require 'modules.grid.shared'
+-- clothing squares (data/clothing.lua) are extra player slots after the equipment slots
+require 'modules.clothing.shared'
 
 if lib.context == 'server' then
     shared.ready = false

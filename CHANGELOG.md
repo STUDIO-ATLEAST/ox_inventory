@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0 (2026-11-21)
+
+### Added
+
+- Optional clothing as items in `data/clothing.lua`, off by default. The new Clothing tab next to Inventory shows the character with squares for the hat, glasses, ears, mask, chain, watch, shirt, undershirt, gloves, pants, shoes and bracelet. Whatever is in a square is what the character wears.
+- `clothing_item` in `data/items.lua`, using the rm-appearance item format, so clothing items from either resource work in both.
+- Client exports `syncClothingFromPed`, `applyClothing` and `pauseClothing`, plus a README guide with the illenium-appearance edits.
+- The clothes a character is wearing become items the first time they load with clothing turned on.
+
+### Changed
+
+- Grid sizes also read `width` and `height` fields on item definitions.
+
 ## 1.2.0 (2026-11-21)
 
 ### Added

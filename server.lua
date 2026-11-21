@@ -827,3 +827,5 @@ lib.registerHook('ox_lib:setPlayerState', nil, {
 })
 
 require 'modules.utility.server'
+-- clothing squares on the Clothing tab (data/clothing.lua)
+require 'modules.clothing.server'

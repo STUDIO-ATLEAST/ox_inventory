@@ -1399,6 +1399,8 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 				weaponSlots = Utility.weaponSlots,
 				equipment = Utility.equipment,
 				tabs = Utility.tabs,
+				-- clothing squares (data/clothing.lua), empty when that is off
+				clothing = Utility.clothing,
 			},
 			grid = {
 				enabled = Grid.enabled,
@@ -2194,3 +2196,5 @@ lib.callback.register('ox_inventory:getVehicleData', function(netid)
 end)
 
 require 'modules.utility.client'
+-- clothing squares on the Clothing tab (data/clothing.lua)
+require 'modules.clothing.client'

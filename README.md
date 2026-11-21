@@ -4,7 +4,7 @@
 
 **Preview video:** [watch on YouTube](https://www.youtube.com/watch?v=rgmuzJRm_uU)
 
-A redesigned ox_inventory for Qbox servers. It keeps everything the original inventory does and adds a three-column layout with Inventory, Crafting and Health tabs, equipment slots for a backpack, armour, phone and parachute, worn backpacks with a prop on the player, armour that lives in the vest item, crafting from anywhere, a new crafting station view and a shop with a basket and Cash or Card payment.
+A redesigned ox_inventory for Qbox servers. It keeps everything the original inventory does and adds a three-column layout with Inventory, Crafting and Health tabs, equipment slots for a backpack, armour, phone and parachute, worn backpacks with a prop on the player, armour that lives in the vest item, crafting from anywhere, a new crafting station view and a shop with a basket and Cash or Card payment. Three optional features can be turned on in the config: a Tarkov-style grid, item rarity and clothing as items with its own Clothing tab.
 
 This is a fork of [ox_inventory](https://github.com/overextended/ox_inventory) by [Overextended](https://github.com/overextended), version 2.48.1. All of the core inventory, item, stash, shop and weapon logic is their work. Please support the original project, and read its [documentation](https://overextended.dev/docs/ox_inventory) for everything this README does not cover.
 
@@ -106,6 +106,12 @@ Turn on the grid and every storage inventory becomes a grid of cells. A pistol t
 Items can have a rarity tier: common, uncommon, rare, epic or legendary. Rare items get a tinted slot and border in the tier colour, and the tooltip shows the name in that colour with a tier badge. Items without a rarity look exactly as before. Rarity is on by default and can be turned off in one line. See [Item rarity guide](#item-rarity-guide).
 
 ![Tooltip with rarity and grid size](images/grid-tooltip.png)
+
+### Clothing as items (optional)
+
+![Clothing tab](images/clothing.png)
+
+The Clothing tab sits next to Inventory and shows your character with one square per piece of clothing: hat, glasses, ears, mask, chain, watch, shirt, undershirt, gloves, pants, shoes and bracelet. Whatever is in a square is what you wear. Drag a piece in to put it on, drag it out to take it off, or use it from your pockets. Clothing items can be saved, traded, stored and dropped like any other item. Clothing is off by default and works with illenium-appearance and rm-appearance. See [Clothing guide](#clothing-guide).
 
 ## Requirements
 
@@ -214,13 +220,95 @@ An item gets its tier from the first of these that is set:
 
 The tiers are listed in `tiers` as `{ id, label, color }`. The defaults are common (grey, no slot tint), uncommon (green #69db7c), rare (blue #4dabf7), epic (violet #9775fa) and legendary (orange #ffa94d). You can add your own tier with any colour. The UI mixes the slot fill and border from that colour, so they stay solid over the game. Rarity only changes how items look. It does not change stacking, weight or any other behaviour.
 
+## Clothing guide
+
+### Turning it on
+
+| Step | What to do |
+| --- | --- |
+| 1 | Make sure `mode = 'utility'` in `data/utility.lua`. The Clothing tab needs the tab bar. |
+| 2 | Check that `clothing_item` is in `data/items.lua` (it ships with this repository). It uses `client.export = 'ox_inventory.useClothingItem'`. |
+| 3 | Set `enabled = true` in `data/clothing.lua` and restart the resource. |
+| 4 | Make the illenium-appearance edits below, or the rm-appearance setting, depending on which one you run. |
+
+The first time a character loads with clothing turned on, the clothes they are wearing become items in their squares, so nobody spawns without clothes. The squares are extra player slots added after the equipment slots, so the rest of the inventory doesn't change.
+
+### Options in `data/clothing.lua`
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `enabled` | `false` | Turns clothing as items and the Clothing tab on. |
+| `item` | `'clothing_item'` | The item every piece uses. |
+| `appearance` | `'auto'` | Which appearance resource gets the new look saved after a change: `'auto'`, `'illenium-appearance'`, `'rm-appearance'` or `false`. |
+| `storeOutfitOnFirstLoad` | `true` | Turns the clothes a character is wearing into items the first time they load. |
+| `slots` | 12 squares | Each square as `{ key, label, component or prop, side }`. Remove a line to drop that square. |
+| `naked` | freemode defaults | What an empty square puts on, per model and component. |
+
+### Clothing items
+
+Every piece is a `clothing_item` with metadata in the format rm-appearance uses, so items made by either resource work in both:
+
+```lua
+{ slot = 'shirt', model = 'mp_m_freemode_01', collection = '', drawable = 15, texture = 0, label = 'Shirt #15 (Male)' }
+```
+
+`slot` names the square, `model` is the freemode model the piece is made for, and `collection` with `drawable` picks the piece (an empty collection means `drawable` is the global index). A piece only fits its own square, and a piece made for the other model doesn't go on. To give someone a piece from another script:
+
+```lua
+exports.ox_inventory:AddItem(source, 'clothing_item', 1, { slot = 'hat', model = 'mp_m_freemode_01', collection = '', drawable = 5, texture = 0, label = 'Hat #5 (Male)' })
+```
+
+### Exports
+
+| Export | Side | What it does |
+| --- | --- | --- |
+| `exports.ox_inventory:syncClothingFromPed()` | client | Turns what the character wears into the items in the squares. Pieces that get replaced go to the pockets. Call it after a clothing shop purchase. |
+| `exports.ox_inventory:applyClothing()` | client | Puts the clothes from the squares back on the character. |
+| `exports.ox_inventory:pauseClothing(state)` | client | Stops ox_inventory from changing the character while `state` is true, for example while a clothing menu is open or a job uniform is on. Setting it back to false puts the squares back on. |
+
+### illenium-appearance edits
+
+ox_inventory already puts the squares back on after illenium's `reloadSkin` and wardrobe `changeOutfit` events, and saves the look back to illenium after every change. Clothing shops and the character creator change the ped directly, so they need a few lines. All of them go in `illenium-appearance/client/client.lua`.
+
+| Where | Add |
+| --- | --- |
+| `OpenShop` and `InitializeCharacter`, before `client.startPlayerCustomization(` | `if GetResourceState('ox_inventory') == 'started' then exports.ox_inventory:pauseClothing(true) end` |
+| The callback of both `client.startPlayerCustomization` calls, as its first line | `if GetResourceState('ox_inventory') == 'started' then exports.ox_inventory:pauseClothing(false) end` |
+| `OpenShop`, right after `TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)` | `if GetResourceState('ox_inventory') == 'started' then exports.ox_inventory:syncClothingFromPed() end` |
+| `InitializeCharacter`, right after its `saveAppearance` | the same `syncClothingFromPed()` line, so a new character's first outfit becomes items |
+| Job uniforms (`loadJobOutfit`), if uniforms stay outfits and not items | `exports.ox_inventory:pauseClothing(true)` when the uniform goes on and `pauseClothing(false)` when it comes off |
+
+For example, the save part of `OpenShop` ends up like this:
+
+```lua
+client.startPlayerCustomization(function(appearance)
+    if GetResourceState('ox_inventory') == 'started' then exports.ox_inventory:pauseClothing(false) end
+    if appearance then
+        if not isPedMenu then
+            TriggerServerEvent("illenium-appearance:server:chargeCustomer", shopType)
+        end
+        TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)
+        if GetResourceState('ox_inventory') == 'started' then exports.ox_inventory:syncClothingFromPed() end
+    else
+        -- cancelled, unchanged
+    end
+    Framework.CachePed()
+end, config)
+```
+
+Wardrobe outfits never create items, because that would duplicate clothes. About two seconds after a wardrobe outfit or `/reloadskin`, the clothes from the squares go back on. If you want clothes to come only from items, hide the wardrobe from players.
+
+### rm-appearance
+
+rm-appearance needs no code edits. ox_inventory waits while its editor is open and calls `syncClothingFromPed()` when the editor saves (add that call after `state.persist()` in `editor.save` if your copy doesn't have it yet). Turn off rm-appearance's own `physicalItems` option while the Clothing tab is on, because its /shirt style commands take clothes off without going through the squares.
+
 ## Building the UI
 
 The UI is a React app in `web/`. You need Node.js and pnpm.
 
 Install the dependencies once from the `web` folder with `pnpm install`. Then run `pnpm run build`, which type checks the code and writes the result to `web/build`. If you only want to build without the type check, run `node node_modules/vite/bin/vite.js build` from the same folder.
 
-Restart the resource in game after a build to load the new UI. Running `pnpm start` serves the UI in a browser with sample data, which is useful while working on the design. Add `?grid=1` to the address to preview the grid, `?grid=1&mode=classic` for the grid in classic mode, and `?rarity=0` to hide rarity.
+Restart the resource in game after a build to load the new UI. Running `pnpm start` serves the UI in a browser with sample data, which is useful while working on the design. Add `?grid=1` to the address to preview the grid, `?grid=1&mode=classic` for the grid in classic mode, `?clothing=1&tab=clothing` for the Clothing tab, and `?rarity=0` to hide rarity.
 
 ## Changes from the original
 
@@ -236,6 +324,7 @@ The table below lists where this fork differs from ox_inventory 2.48.1, as the l
 | New text | `locales/en.json` |
 | Grid inventory | `data/grid.lua`, `modules/grid/shared.lua` (new), `init.lua`, `server.lua`, `modules/inventory/server.lua`, `modules/shops/server.lua`, `modules/crafting/server.lua`, `client.lua` |
 | Item rarity | `data/rarity.lua` (new), `client.lua` |
+| Clothing as items | `data/clothing.lua`, `modules/clothing/*` (new), `data/items.lua`, `modules/utility/shared.lua`, `modules/inventory/server.lua`, `init.lua`, `client.lua`, `server.lua` |
 | Redesigned UI | `web/src` and the built files in `web/build` |
 
 ## Changelog

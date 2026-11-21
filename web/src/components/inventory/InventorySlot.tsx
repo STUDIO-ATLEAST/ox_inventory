@@ -15,7 +15,7 @@ import { ItemsPayload } from '../../reducers/refreshSlots';
 import { closeTooltip, openTooltip } from '../../store/tooltip';
 import { openContextMenu } from '../../store/contextMenu';
 import { useMergeRefs } from '@floating-ui/react';
-import { canHoldItem } from '../../store/utility';
+import { canHoldItem, getClothingSlot } from '../../store/utility';
 import { getRarity } from '../../store/rarity';
 import { canSwap, Grid } from '../../store/grid';
 import { startGridDrag } from '../../store/gridDrag';
@@ -38,11 +38,20 @@ const fitsGrid = (source: DragSource, target: Slot, targetType: Inventory['type'
 };
 
 // Weapon / equipment slots only take their own items, in either direction of a swap
+// (clothing squares also look at the metadata, so a shirt only fits the shirt square)
 const fitsUtilitySlots = (source: DragSource, target: Slot, targetType: Inventory['type']) => {
-  if (targetType === InventoryType.PLAYER && !canHoldItem(target.slot, source.item.name)) return false;
+  const state = store.getState().inventory;
+  const { sourceInventory } = getTargetInventory(state, source.inventory, targetType);
+  const metadata = sourceInventory.items[source.item.slot - 1]?.metadata;
 
-  if (source.inventory === InventoryType.PLAYER && isSlotWithItem(target) && target.name !== source.item.name)
-    return canHoldItem(source.item.slot, target.name);
+  if (targetType === InventoryType.PLAYER && !canHoldItem(target.slot, source.item.name, metadata)) return false;
+
+  if (
+    source.inventory === InventoryType.PLAYER &&
+    isSlotWithItem(target) &&
+    (target.name !== source.item.name || getClothingSlot(source.item.slot))
+  )
+    return canHoldItem(source.item.slot, target.name, target.metadata);
 
   return true;
 };

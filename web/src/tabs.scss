@@ -1020,3 +1020,47 @@ $sev3: #ff6b6b;
 .inventory-slot.is-over .hotbar-key {
   color: $white;
 }
+
+// ---------------------------------------------------------------------------
+// Clothing tab (data/clothing.lua): six smaller squares on each side of the character
+// ---------------------------------------------------------------------------
+
+$clothingSlot: 6.6vh;
+$clothingColumn: 8.4vh;
+
+.clothing-body {
+  grid-template-columns: $clothingColumn 1fr $clothingColumn;
+
+  .utility-column {
+    gap: 0.8vh;
+  }
+
+  // squares sit against the outer edges, like the equipment boxes
+  .utility-column:last-child .clothing-box {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+}
+
+.clothing-box {
+  width: $clothingColumn;
+  gap: 0.4vh;
+
+  .utility-box-label {
+    height: 1.4vh;
+    font-size: 0.9vh;
+  }
+}
+
+.utility-slot.clothing-slot {
+  width: $clothingSlot;
+  height: $clothingSlot;
+  background-size: 4.6vh;
+
+  // the label above already names the piece
+  .inventory-slot-label-box,
+  .item-slot-weight,
+  .item-slot-count {
+    display: none;
+  }
+}

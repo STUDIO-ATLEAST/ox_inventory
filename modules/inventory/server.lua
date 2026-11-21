@@ -2061,8 +2061,9 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 			end
 
 			-- utility slots (weapon / equipment) only take their own items, in either direction of a swap
-			if toInventory.type == 'player' and not Utility.canHold(data.toSlot, fromData.name) then return false end
-			if fromInventory.type == 'player' and toData and toData.name ~= fromData.name and not Utility.canHold(data.fromSlot, toData.name) then return false end
+			-- (clothing squares also check the item's metadata, so a shirt only fits the shirt square)
+			if toInventory.type == 'player' and not Utility.canHold(data.toSlot, fromData.name, fromData.metadata) then return false end
+			if fromInventory.type == 'player' and toData and (toData.name ~= fromData.name or Utility.isClothingSlot(data.fromSlot)) and not Utility.canHold(data.fromSlot, toData.name, toData.metadata) then return false end
 
 			local hookPayload = {
 				source = source,

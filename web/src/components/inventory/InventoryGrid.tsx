@@ -6,7 +6,7 @@ import { getTotalWeight } from '../../helpers';
 import { useAppSelector } from '../../store';
 import { useIntersection } from '../../hooks/useIntersection';
 import { Locale } from '../../store/locale';
-import { getEquipmentSlot, Utility } from '../../store/utility';
+import { getClothingSlot, getEquipmentSlot, Utility } from '../../store/utility';
 import UtilityIcon from '../utils/icons/UtilityIcons';
 import { ChevronDown, Weight } from 'lucide-react';
 import PanelHeading, { iconForType } from './PanelHeading';
@@ -58,7 +58,7 @@ const InventoryGrid: React.FC<{
   const items = useMemo(
     () =>
       hideHotkeys && isPlayer
-        ? inventory.items.filter((item) => item.slot > 5 && !getEquipmentSlot(item.slot))
+        ? inventory.items.filter((item) => item.slot > 5 && !getEquipmentSlot(item.slot) && !getClothingSlot(item.slot))
         : inventory.items,
     [hideHotkeys, isPlayer, inventory.items]
   );

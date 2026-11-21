@@ -40,6 +40,30 @@ const devTooltip = () => {
   }, 1800);
 };
 
+// ?clothing=1: clothing items in the Clothing tab squares, plus two spare pieces for the pockets
+const clothingPiece = (key: string, label: string, drawable: number, slot: number) => ({
+  slot,
+  name: 'clothing_item',
+  weight: 250,
+  count: 1,
+  metadata: { slot: key, model: 'mp_m_freemode_01', collection: '', drawable, texture: 0, label: `${label} #${drawable} (Male)` },
+});
+
+const clothingFixture = (pocketSlots: number[]) => {
+  const square = (key: string) => Utility.clothing.find((entry) => entry.key === key)?.slot ?? 0;
+  return [
+    clothingPiece('hat', 'Hat', 5, square('hat')),
+    clothingPiece('glasses', 'Glasses', 7, square('glasses')),
+    clothingPiece('watch', 'Watch', 3, square('watch')),
+    clothingPiece('shirt', 'Shirt', 15, square('shirt')),
+    clothingPiece('undershirt', 'Undershirt', 2, square('undershirt')),
+    clothingPiece('pants', 'Pants', 24, square('pants')),
+    clothingPiece('shoes', 'Shoes', 10, square('shoes')),
+    clothingPiece('shirt', 'Shirt', 4, pocketSlots[0]),
+    clothingPiece('mask', 'Mask', 51, pocketSlots[1]),
+  ];
+};
+
 export const devGridSetup = () => {
   if (!import.meta.env.DEV) return;
 
@@ -62,7 +86,44 @@ export const devGridSetup = () => {
   add('money', 'Money');
   Items['lockpick'] = { ...Items['lockpick']!, rarity: 'common' };
 
-  if (!Grid.enabled) return;
+  const clothing = Utility.clothing.length > 0;
+  if (clothing) add('clothing_item', 'Clothing', { stack: false });
+
+  if (!Grid.enabled) {
+    if (clothing)
+      debugData(
+        [
+          {
+            action: 'setupInventory',
+            data: {
+              leftInventory: {
+                id: 'test',
+                type: 'player',
+                slots: 50 + Utility.clothing.length,
+                label: 'QuickOtter7579',
+                weight: 3000,
+                maxWeight: 75000,
+                items: [
+                  { slot: 1, name: 'WEAPON_PISTOL', weight: 1200, count: 1, metadata: { durability: 82, ammo: 12 } },
+                  { slot: 3, name: 'tablet', weight: 20, count: 1 },
+                  { slot: 6, name: 'bandage', weight: 3000, count: 15 },
+                  { slot: 7, name: 'firstaid', weight: 6000, count: 6 },
+                  { slot: 8, name: 'laptop', weight: 1500, count: 1 },
+                  { slot: 9, name: 'lockpick', weight: 2250, count: 15 },
+                  { slot: 10, name: 'money', weight: 0, count: 2350 },
+                  { slot: 13, name: 'phone', weight: 190, count: 1 },
+                  { slot: 47, name: 'backpack', weight: 4200, count: 1, metadata: { container: 'dev-backpack', size: [20, 40000] } },
+                  { slot: 48, name: 'armour', weight: 3000, count: 1 },
+                  ...clothingFixture([11, 12]),
+                ],
+              },
+            },
+          },
+        ],
+        1100
+      );
+    return;
+  }
 
   const sizes: Record<string, [number, number]> = {
     WEAPON_PISTOL: [2, 1],
@@ -85,6 +146,10 @@ export const devGridSetup = () => {
   const pocketSlots = Grid.hotbar + Grid.columns * Grid.playerRows;
   if (Utility.mode === 'utility')
     Utility.equipment = Utility.equipment.map((entry, index) => ({ ...entry, slot: pocketSlots + index + 1 }));
+  if (clothing) {
+    const base = pocketSlots + Utility.equipment.length;
+    Utility.clothing = Utility.clothing.map((entry, index) => ({ ...entry, slot: base + index + 1 }));
+  }
   const equipmentSlot = (kind: string) => Utility.equipment.find((entry) => entry.kind === kind)?.slot;
   const cell = (x: number, y: number) => Grid.hotbar + 1 + y * Grid.columns + x;
 
@@ -120,6 +185,7 @@ export const devGridSetup = () => {
       count: 1,
       metadata: { container: 'dev-backpack', size: [16, 40000] } as any,
     });
+  if (clothing) pockets.push(...(clothingFixture([cell(5, 4), cell(6, 4)]) as any[]));
   if (armor) pockets.push({ slot: armor, name: 'heavyarmor', weight: 5000, count: 1, metadata: { durability: 100 } });
 
   const stashCell = (x: number, y: number) => 1 + y * Grid.columns + x;
@@ -134,7 +200,7 @@ export const devGridSetup = () => {
           leftInventory: {
             id: 'test',
             type: 'player',
-            slots: pocketSlots + Utility.equipment.length,
+            slots: pocketSlots + Utility.equipment.length + Utility.clothing.length,
             label: 'QuickOtter7579',
             weight: 3000,
             maxWeight: 75000,

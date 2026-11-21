@@ -52,7 +52,8 @@ for i = 1, #Utility.weaponSlots do
 end
 
 local equipment = isUtilityMode and config.equipment or {}
-local firstSlot = shared.playerslots - #equipment
+-- the clothing squares (data/clothing.lua) come after the equipment slots
+local firstSlot = (shared.baseslots or shared.playerslots) - #equipment
 
 for i = 1, #equipment do
     local entry = equipment[i]
@@ -67,12 +68,31 @@ for i = 1, #equipment do
     rules[slot] = function(itemName) return allowed[itemName:lower()] == true end
 end
 
+local Clothing = require 'modules.clothing.shared'
+
+Utility.clothing = Clothing.slots
+-- Clothing tab next to Inventory, Crafting and Health
+Utility.tabs.clothing = Clothing.enabled
+
+for i = 1, #Clothing.slots do
+    local slot = Clothing.slots[i].slot
+    rules[slot] = function(itemName, metadata) return Clothing.canHold(slot, itemName, metadata) end
+end
+
 ---Whether a player inventory slot may hold the given item.
+---Clothing squares need the item's metadata; without it they never take anything, so items are only
+---ever put there on purpose.
 ---@param slot number
 ---@param itemName string
-function Utility.canHold(slot, itemName)
+---@param metadata? table
+function Utility.canHold(slot, itemName, metadata)
     local rule = rules[slot]
-    return not rule or rule(itemName)
+    return not rule or rule(itemName, metadata)
+end
+
+---@param slot number
+function Utility.isClothingSlot(slot)
+    return Clothing.bySlot[slot] ~= nil
 end
 
 ---Whether a player inventory slot only accepts specific items.

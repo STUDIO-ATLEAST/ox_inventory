@@ -3913,6 +3913,18 @@ return {
         consume = 0,
     },
 
+    -- one piece of clothing; metadata says which square it goes in (data/clothing.lua, rm-appearance format)
+    ["clothing_item"] = {
+        label = "Clothing",
+        description = "A piece of clothing",
+        weight = 250,
+        stack = false,
+        close = true,
+        client = {
+            export = 'ox_inventory.useClothingItem',
+        },
+    },
+
     ["clothing_bag"] = {
         label = "Clothing Bag",
         description = 'A duffel bag with a change of clothes',
