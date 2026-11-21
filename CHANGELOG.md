@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0 (2026-11-21)
+
+### Added
+
+- Optional Tarkov-style grid inventory in `data/grid.lua`, off by default. Items take up width x height cells, can be dropped anywhere they fit and turn with R while dragging or while hovering. Positions and rotation are saved on the server and checked on every move, swap, stack, split, purchase and craft.
+- Default grid sizes for every weapon group, armour, bags and a few large items, which you can change per item with `size = { w, h }` or in `data/grid.lua`.
+- Optional item rarity in `data/rarity.lua`, on by default. Tiers come from item metadata, the item definition or a central table, and show as a tinted slot, a coloured name and a tier badge.
+- `GetEmptySlot` takes an optional item name and returns whether the item has to be turned to fit.
+
+### Changed
+
+- New hover tooltip: a header with the item picture, name and type, tier and size tags, the description, and a stat list with a durability bar.
+
 ## 1.1.0 (2026-11-18)
 
 ### Added

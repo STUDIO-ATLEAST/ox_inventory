@@ -123,6 +123,8 @@ local CraftingBenches = require 'modules.crafting.client'
 local Vehicles = lib.load('data.vehicles')
 local Inventory = require 'modules.inventory.client'
 local Utility = require 'modules.utility.shared'
+local Grid = require 'modules.grid.shared'
+local Rarity = lib.load('data.rarity') or {}
 
 ---Slot of the worn backpack: the backpack equipment slot in 'utility' mode,
 ---the first backpack container carried anywhere in 'classic' mode.
@@ -1281,7 +1283,10 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 			description = v.description,
 			buttons = buttons,
 			ammoName = v.ammoname,
-			image = v.client?.image
+			image = v.client?.image,
+			-- optional features (data/rarity.lua, data/grid.lua)
+			rarity = Rarity.enabled and (v.rarity or (Rarity.items and Rarity.items[v.name:lower()])) or nil,
+			size = Grid.enabled and { Grid.itemSize(v.name) } or nil,
 		}
 	end
 
@@ -1394,6 +1399,16 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 				weaponSlots = Utility.weaponSlots,
 				equipment = Utility.equipment,
 				tabs = Utility.tabs,
+			},
+			grid = {
+				enabled = Grid.enabled,
+				columns = Grid.columns,
+				playerRows = Grid.playerRows,
+				hotbar = Grid.hotbar,
+			},
+			rarity = {
+				enabled = Rarity.enabled == true,
+				tiers = Rarity.tiers or {},
 			},
 		}
 	})

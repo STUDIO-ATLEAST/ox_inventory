@@ -4,6 +4,7 @@ local Items = require 'modules.items.server'
 local Inventory = require 'modules.inventory.server'
 local TriggerEventHooks = require 'modules.hooks.server'
 local Utility = require 'modules.utility.shared'
+local Grid = require 'modules.grid.shared'
 local Shops = {}
 local locations = shared.target and 'targets' or 'locations'
 
@@ -264,6 +265,25 @@ lib.callback.register('ox_inventory:buyItem', function(source, data)
 			local result = fromItem.cb and fromItem.cb('buying', fromItem, playerInv, data.fromSlot, shop)
 			if result == false then return false end
 
+			-- grid inventory: a new stack needs room for the whole item, so look for some when the spot asked for has none
+			local rotation
+
+			if not toData and Grid.layoutOf(playerInv) then
+				local rotate = data.rotate == true
+
+				if Grid.canPlace(playerInv, data.toSlot, fromItem.name, rotate) then
+					rotation = rotate
+				else
+					local slot, rotated = Inventory.GetEmptySlot(playerInv, fromItem.name)
+
+					if not slot then
+						return false, false, { type = 'error', description = locale('cannot_carry') }
+					end
+
+					data.toSlot, rotation = slot, rotated == true
+				end
+			end
+
 			local toItem = toData and Items(toData.name)
 
 			local metadata, count = Items.Metadata(playerInv, fromItem, fromData.metadata and table.clone(fromData.metadata) or {}, data.count)
@@ -321,6 +341,10 @@ lib.callback.register('ox_inventory:buyItem', function(source, data)
 					end
 
 					return false
+				end
+
+				if rotation ~= nil and playerInv.items[data.toSlot] then
+					playerInv.items[data.toSlot].rotated = rotation or nil
 				end
 
 				playerInv.weight = newWeight

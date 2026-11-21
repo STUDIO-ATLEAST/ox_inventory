@@ -41,6 +41,8 @@ export const onBuy = (source: DragSource, target: DropTarget) => {
     toType: targetInventory.type,
     count: count,
     payment: getPayment(),
+    // grid inventory: rotation at the target
+    rotate: target.rotate,
   };
 
   store.dispatch(

@@ -16,6 +16,26 @@ import { closeTooltip, openTooltip } from '../../store/tooltip';
 import { openContextMenu } from '../../store/contextMenu';
 import { useMergeRefs } from '@floating-ui/react';
 import { canHoldItem } from '../../store/utility';
+import { getRarity } from '../../store/rarity';
+import { canSwap, Grid } from '../../store/grid';
+import { startGridDrag } from '../../store/gridDrag';
+import { store } from '../../store';
+import { canStack, getTargetInventory } from '../../helpers';
+
+// Grid inventory: a single slot (hotbar, equipment) takes any size, but an item swapped out of it has to
+// fit back into the grid cell the dragged item came from
+const fitsGrid = (source: DragSource, target: Slot, targetType: Inventory['type']) => {
+  if (!Grid.enabled || !isSlotWithItem(target)) return true;
+
+  const state = store.getState().inventory;
+  const { sourceInventory, targetInventory } = getTargetInventory(state, source.inventory, targetType);
+  const from = sourceInventory.items[source.item.slot - 1];
+
+  if (!isSlotWithItem(from)) return true;
+  if (Items[from.name]?.stack && canStack(from, target)) return true;
+
+  return canSwap(sourceInventory, from, targetInventory, target, from.rotated);
+};
 
 // Weapon / equipment slots only take their own items, in either direction of a swap
 const fitsUtilitySlots = (source: DragSource, target: Slot, targetType: Inventory['type']) => {
@@ -101,7 +121,10 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
         (source.item.slot !== item.slot || source.inventory !== inventoryType) &&
         inventoryType !== InventoryType.SHOP &&
         inventoryType !== InventoryType.CRAFTING &&
-        fitsUtilitySlots(source, item, inventoryType),
+        fitsUtilitySlots(source, item, inventoryType) &&
+        (source.inventory === InventoryType.SHOP ||
+          source.inventory === InventoryType.CRAFTING ||
+          fitsGrid(source, item, inventoryType)),
     }),
     [inventoryType, item]
   );
@@ -146,16 +169,20 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
   const isHotslot = inventoryType === 'player' && item.slot <= 5;
   const locked =
     !canPurchaseItem(item, { type: inventoryType, groups: inventoryGroups }) || !canCraftItem(item, inventoryType);
+  const rarity = isSlotWithItem(item) ? getRarity(item) : null;
 
   return (
     <div
       ref={refs}
       onContextMenu={handleContext}
       onClick={handleClick}
+      // grid inventory: the drag starts with the item's own rotation, R turns it while dragging
+      onMouseDown={() => isSlotWithItem(item) && startGridDrag(!!item.rotated)}
       className={`inventory-slot${className ? ` ${className}` : ''}${isOver ? ' is-over' : ''}${
         isSlotWithItem(item) ? ' has-item' : ''
-      }`}
+      }${rarity?.tinted ? ' rarity' : ''}`}
       style={{
+        ...rarity?.vars,
         filter: locked ? 'brightness(80%) grayscale(100%)' : undefined,
         opacity: isDragging ? 0.4 : 1.0,
         backgroundImage: `url(${item?.name ? getItemUrl(item as SlotWithItem) : 'none'}`,

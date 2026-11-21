@@ -91,6 +91,22 @@ Pick Cash or Card before paying. Cash uses the `money` item in your pockets, as 
 
 License, job grade and stock checks work as in the original shops. The `buyItem` event hook also receives a `payment` field that is either `cash` or `card`.
 
+### Grid inventory, Tarkov style (optional)
+
+![Grid inventory](images/grid.png)
+
+Turn on the grid and every storage inventory becomes a grid of cells. A pistol takes 2 x 1, an SMG 3 x 2, a rifle 4 x 2 and a sniper 5 x 2. You drop items anywhere they fit and press R to turn them, the same way as in Escape from Tarkov. Positions and rotation are saved on the server and checked on every move. The grid is off by default. See [Grid inventory guide](#grid-inventory-guide) to turn it on.
+
+![Grid inventory in classic mode](images/grid-classic.png)
+
+### Item rarity (optional)
+
+![Item rarity](images/rarity.png)
+
+Items can have a rarity tier: common, uncommon, rare, epic or legendary. Rare items get a tinted slot and border in the tier colour, and the tooltip shows the name in that colour with a tier badge. Items without a rarity look exactly as before. Rarity is on by default and can be turned off in one line. See [Item rarity guide](#item-rarity-guide).
+
+![Tooltip with rarity and grid size](images/grid-tooltip.png)
+
 ## Requirements
 
 | Resource | Needed | Notes |
@@ -139,13 +155,72 @@ The number of player slots still comes from the `inventory:slots` convar, so the
 
 The personal crafting bench and the world stations are set up in `data/crafting.lua`, in the same format as the original resource. The bench named `personal` feeds the Crafting tab.
 
+## Grid inventory guide
+
+### Turning it on
+
+| Step | What to do |
+| --- | --- |
+| 1 | Open `data/grid.lua` and set `enabled = true`. |
+| 2 | Optionally change `columns` (cells per row, default 8) and `playerRows` (height of the pockets, default 8). The UI is laid out for 8 columns. |
+| 3 | Restart the resource, or the server. No database changes are needed. |
+
+### What changes
+
+The pockets become a `columns` x `playerRows` grid. The hotbar (slots 1 to 5) and the equipment slots stay as single slots that hold an item of any size, so a rifle still fits in a weapon slot. Stashes, trunks, gloveboxes, drops, bags, evidence lockers and dumpsters become grids too. Their slot count is rounded up to whole rows, so a 50 slot stash becomes 8 x 7 = 56 cells and a 10 slot bag becomes 8 x 2. Shops and crafting benches keep their own views.
+
+With the grid on, the player slot count is no longer the `inventory:slots` convar. It becomes 5 + columns x playerRows, plus the equipment slots in utility mode (73 with the defaults). Turning the grid on or off therefore moves the equipment slots, so players may need to put their worn bag or vest back once.
+
+### Using it
+
+| Action | How |
+| --- | --- |
+| Move an item | Drag it anywhere it fits. The spot under the cursor is outlined, and in red when it does not fit. |
+| Turn an item | Press R while dragging, or press R while the cursor is over an item. |
+| Stack | Drop an item on a stack of the same item. |
+| Swap | Drop a whole item on another item. It only works when both items fit where the other one was. |
+| Split | Hold Shift or set an amount before dragging, the same as in the original inventory. |
+| Quick move | Ctrl + click moves the item to the first spot it fits in the other inventory. |
+
+### Item sizes
+
+Every item is 1 x 1 unless something gives it a size. The first match below wins.
+
+| Where | Example |
+| --- | --- |
+| On the item in `data/items.lua` or `data/weapons.lua` | `['laptop'] = { label = 'Laptop', weight = 1500, size = { 2, 2 } }` |
+| The `sizes` table in `data/grid.lua` | `backpack_large = { 3, 4 }` |
+| The `rules` table in `data/grid.lua`, matched against the lowercase item name as a Lua pattern | `{ match = '^weapon_.*rifle', size = { 4, 2 } }` |
+
+The defaults give pistols 2 x 1, SMGs 3 x 2, rifles and shotguns 4 x 2, snipers, launchers and machine guns 5 x 2, throwables 1 x 1, most melee weapons 3 x 1 or 4 x 1, armour 2 x 2 to 3 x 3, bags 2 x 2 to 3 x 4 and the laptop 2 x 2. Sizes wider than the grid are cut down to the column count.
+
+### How it is stored
+
+An item's slot number is the top-left cell it sits in, and a `rotated` flag is saved with it next to `name`, `count`, `slot` and `metadata`. The server checks every move, swap, stack, split, turn, `AddItem`, give, shop purchase and craft against the grid, so a modified client cannot overlap items. When an inventory loads, any item that no longer fits where it was saved, for example after you change a size, moves to the first free spot.
+
+`exports.ox_inventory:GetEmptySlot(inv, itemName)` takes an optional item name in grid mode and returns the slot and whether the item has to be turned. `CanCarryItem` and `GetSlotForItem` also take item size into account when the grid is on.
+
+## Item rarity guide
+
+Rarity is set up in `data/rarity.lua`. Set `enabled = false` to turn it off everywhere.
+
+An item gets its tier from the first of these that is set:
+
+| Where | Example |
+| --- | --- |
+| The item's metadata, for one single item | `exports.ox_inventory:AddItem(source, 'WEAPON_PISTOL', 1, { rarity = 'legendary' })` |
+| The item definition in `data/items.lua` or `data/weapons.lua` | `['advancedlockpick'] = { label = 'Advanced Lockpick', rarity = 'uncommon' }` |
+| The `items` table in `data/rarity.lua` | `weapon_rpg = 'legendary'` |
+
+The tiers are listed in `tiers` as `{ id, label, color }`. The defaults are common (grey, no slot tint), uncommon (green #69db7c), rare (blue #4dabf7), epic (violet #9775fa) and legendary (orange #ffa94d). You can add your own tier with any colour. The UI mixes the slot fill and border from that colour, so they stay solid over the game. Rarity only changes how items look. It does not change stacking, weight or any other behaviour.
+
 ## Building the UI
 
 The UI is a React app in `web/`. You need Node.js and pnpm.
 
 Install the dependencies once from the `web` folder with `pnpm install`. Then run `pnpm run build`, which type checks the code and writes the result to `web/build`. If you only want to build without the type check, run `node node_modules/vite/bin/vite.js build` from the same folder.
 
-Restart the resource in game after a build to load the new UI. Running `pnpm start` serves the UI in a browser with sample data, which is useful while working on the design.
+Restart the resource in game after a build to load the new UI. Running `pnpm start` serves the UI in a browser with sample data, which is useful while working on the design. Add `?grid=1` to the address to preview the grid, `?grid=1&mode=classic` for the grid in classic mode, and `?rarity=0` to hide rarity.
 
 ## Changes from the original
 
@@ -159,6 +234,8 @@ The table below lists where this fork differs from ox_inventory 2.48.1, as the l
 | Card payments in shops | `modules/shops/server.lua` |
 | Personal crafting bench, and the server check that blocks it when the Crafting tab is off | `data/crafting.lua`, `modules/crafting/server.lua` |
 | New text | `locales/en.json` |
+| Grid inventory | `data/grid.lua`, `modules/grid/shared.lua` (new), `init.lua`, `server.lua`, `modules/inventory/server.lua`, `modules/shops/server.lua`, `modules/crafting/server.lua`, `client.lua` |
+| Item rarity | `data/rarity.lua` (new), `client.lua` |
 | Redesigned UI | `web/src` and the built files in `web/build` |
 
 ## Changelog

@@ -7,6 +7,8 @@ export type Slot = {
     [key: string]: any;
   };
   durability?: number;
+  // grid inventory: width and height swapped
+  rotated?: boolean;
 };
 
 export type SlotWithItem = Slot & {

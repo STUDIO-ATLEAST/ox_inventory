@@ -11,6 +11,8 @@ export const validateMove = createAsyncThunk(
       toSlot: number;
       toType: string;
       count: number;
+      // grid inventory: rotation at the target
+      rotate?: boolean;
     },
     { rejectWithValue, dispatch }
   ) => {

@@ -242,6 +242,9 @@ if shared.target and GetResourceState('ox_target') ~= 'started' then
     warn('ox_target is not loaded - it should start before ox_inventory')
 end
 
+-- grid inventory (data/grid.lua) sets the player slot count, so it has to load before anything reads it
+require 'modules.grid.shared'
+
 if lib.context == 'server' then
     shared.ready = false
     return require 'server'

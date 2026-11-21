@@ -11,6 +11,8 @@ export const buyItem = createAsyncThunk(
       toType: string;
       count: number;
       payment?: 'cash' | 'card';
+      // grid inventory: rotation at the target (the server finds another spot when it doesn't fit)
+      rotate?: boolean;
     },
     { rejectWithValue }
   ) => {

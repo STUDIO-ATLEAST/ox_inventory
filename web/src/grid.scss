@@ -1,0 +1,195 @@
+// Optional features: item rarity (data/rarity.lua) and the Tarkov-style grid inventory (data/grid.lua).
+// Imported at the end of index.scss so it shares its variables. Rarity colours come in as solid,
+// pre-mixed CSS variables from store/rarity.ts, so no fill ever turns see-through over the game.
+
+// ---------------------------------------------------------------------------
+// Rarity
+// ---------------------------------------------------------------------------
+
+.inventory-slot.has-item.rarity,
+.grid-item.rarity {
+  background-color: var(--rarity-bg);
+  border-color: var(--rarity-border);
+
+  &:hover {
+    background-color: var(--rarity-bg-hover);
+  }
+}
+
+// dragging over a rare item still shows the neutral dashed outline
+.inventory-slot.has-item.rarity.is-over {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.product-card.rarity {
+  background: var(--rarity-bg);
+  border-color: var(--rarity-border);
+
+  &:hover:not(.disabled) {
+    background: var(--rarity-bg-hover);
+    border-color: var(--rarity-border);
+  }
+  &.picked {
+    border-color: $blueBorder;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Grid inventory
+// ---------------------------------------------------------------------------
+
+$cellGap: 0.25vh;
+
+.grid-inventory {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8vh;
+  flex: 1;
+  min-height: 0;
+}
+
+// slots 1-5 above the grid when the utility panel isn't showing them
+.grid-hotbar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: $gridGap;
+  flex-shrink: 0;
+
+  .inventory-slot {
+    aspect-ratio: 1;
+    height: auto;
+    background-size: 4.4vh;
+  }
+}
+
+.grid-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.grid-cells {
+  --grid-gap: #{$cellGap};
+  --grid-cell: calc((#{$gridWidth} - (var(--grid-cols) - 1) * var(--grid-gap)) / var(--grid-cols));
+  --grid-pitch: calc(var(--grid-cell) + var(--grid-gap));
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), var(--grid-cell));
+  grid-auto-rows: var(--grid-cell);
+  gap: var(--grid-gap);
+  width: $gridWidth;
+}
+
+.grid-cell {
+  box-sizing: border-box;
+  border-radius: 2px;
+  background: $surface;
+  border: 1px solid $border;
+  pointer-events: none;
+}
+
+// items and the drop preview sit on top of the cells, sized in whole cells
+.grid-item,
+.grid-placement {
+  position: absolute;
+  box-sizing: border-box;
+  left: calc(var(--x) * var(--grid-pitch));
+  top: calc(var(--y) * var(--grid-pitch));
+  width: calc(var(--w) * var(--grid-pitch) - var(--grid-gap));
+  height: calc(var(--h) * var(--grid-pitch) - var(--grid-gap));
+  border-radius: $radiusSm;
+}
+
+.grid-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  background-color: $headerBg;
+  border: 1px solid $borderStrong;
+  color: $text;
+  cursor: grab;
+  transition:
+    background-color $tSlot,
+    border-color $tSlot;
+
+  &:hover {
+    background-color: $surfaceHover;
+  }
+
+  p {
+    font-size: 0.95vh;
+    line-height: 1;
+  }
+}
+
+.grid-item-image {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(100% - 0.8vh);
+  height: calc(100% - 0.8vh);
+  transform: translate(-50%, -50%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  image-rendering: -webkit-optimize-contrast;
+  pointer-events: none;
+}
+
+.grid-item-header,
+.grid-item-footer {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.grid-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4vh;
+  padding: 0.4vh 0.45vh 0;
+}
+
+.grid-item-footer {
+  .inventory-slot-label-text {
+    padding: 0 0.45vh 0.35vh;
+    font-size: 0.9vh;
+  }
+}
+
+// one-cell items keep the picture clear: only the count shows
+.grid-item.narrow .grid-item-footer .inventory-slot-label-text {
+  display: none;
+}
+
+.grid-placement {
+  z-index: 2;
+  pointer-events: none;
+  background: $surfaceHover;
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+
+  &.stack,
+  &.swap {
+    background: transparent;
+  }
+
+  &.invalid {
+    background: $redTint;
+    border: 1px dashed $redBorder;
+  }
+}
+
+// the item that is being dragged stays where it was, dimmed, and lets the cells below take the drop
+body.inv-dragging .grid-item {
+  pointer-events: none;
+}
+
+.item-drag-preview.grid {
+  box-sizing: border-box;
+  background: $headerBg;
+  border: 1px solid $borderStrong;
+  border-radius: $radiusSm;
+  z-index: 200;
+}

@@ -51,7 +51,7 @@ function server.setPlayerInventory(player, data)
 
                     inventory[v.slot] = { name = item.name, label = item.label, weight = weight, slot = v.slot, count = v
                     .count, description = item.description, metadata = v.metadata, stack = item.stack, close = item
-                    .close }
+                    .close, rotated = v.rotated or nil }
                 end
             end
         end

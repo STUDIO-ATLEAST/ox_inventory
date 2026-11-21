@@ -9,4 +9,8 @@ export type ItemData = {
   buttons?: string[];
   ammoName?: string;
   image?: string;
+  // data/rarity.lua tier id
+  rarity?: string;
+  // data/grid.lua cells, width x height
+  size?: [number, number];
 };

@@ -3,6 +3,7 @@ if not lib then return end
 local Inventory = {}
 local db = require 'modules.mysql.server'
 local Utility = require 'modules.utility.shared'
+local Grid = require 'modules.grid.shared'
 
 ---@type table<any, OxInventory>
 local Inventories = {}
@@ -416,7 +417,8 @@ local function minimal(inv)
 				name = v.name,
 				count = v.count,
 				slot = k,
-				metadata = next(v.metadata) and v.metadata or nil
+				metadata = next(v.metadata) and v.metadata or nil,
+				rotated = v.rotated or nil
 			}
 		end
 	end
@@ -449,12 +451,14 @@ function Inventory.SetSlot(inv, item, count, metadata, slot)
 	local currentSlot = inv.items[slot]
 	local newCount = currentSlot and currentSlot.count + count or count
 	local newWeight = currentSlot and inv.weight - currentSlot.weight or inv.weight
+	-- grid inventory: a stack that grows or shrinks keeps its rotation
+	local rotated = currentSlot and currentSlot.name == item.name and currentSlot.rotated or nil
 
 	if currentSlot and newCount < 1 then
 		TriggerClientEvent('ox_inventory:itemNotify', inv.id, { currentSlot, 'ui_removed', currentSlot.count })
 		currentSlot = nil
 	else
-		currentSlot = {name = item.name, label = item.label, weight = item.weight, slot = slot, count = newCount, description = item.description, metadata = metadata, stack = item.stack, close = item.close}
+		currentSlot = {name = item.name, label = item.label, weight = item.weight, slot = slot, count = newCount, description = item.description, metadata = metadata, stack = item.stack, close = item.close, rotated = rotated}
 		local slotWeight = Inventory.SlotWeight(item, currentSlot)
 		currentSlot.weight = slotWeight
 		newWeight += slotWeight
@@ -674,6 +678,13 @@ function Inventory.Create(id, label, invType, slots, weight, maxWeight, owner, i
 		self.weight = Inventory.CalculateWeight(items)
 	end
 
+	if Grid.uses(invType) then
+		-- grid inventories hold whole rows of cells, and every item has to fit where it is anchored
+		if invType ~= 'player' then self.slots = Grid.roundSlots(self.slots) end
+
+		if Grid.normalize(self) and self.changed ~= nil then self.changed = true end
+	end
+
 	Inventories[self.id] = setmetatable(self, OxInventory)
 	return Inventories[self.id]
 end
@@ -762,7 +773,8 @@ function Inventory.Save(inv)
                 name = v.name,
                 count = v.count,
                 slot = k,
-                metadata = next(v.metadata) and v.metadata or nil
+                metadata = next(v.metadata) and v.metadata or nil,
+                rotated = v.rotated or nil
             }
         end
     end
@@ -910,7 +922,7 @@ function Inventory.Load(id, invType, owner)
 				v.metadata = Items.CheckMetadata(v.metadata or {}, item, v.name, ostime)
 				local slotWeight = Inventory.SlotWeight(item, v)
 				weight += slotWeight
-				returnData[v.slot] = {name = item.name, label = item.label, weight = slotWeight, slot = v.slot, count = v.count, description = item.description, metadata = v.metadata, stack = item.stack, close = item.close}
+				returnData[v.slot] = {name = item.name, label = item.label, weight = slotWeight, slot = v.slot, count = v.count, description = item.description, metadata = v.metadata, stack = item.stack, close = item.close, rotated = v.rotated or nil}
 			end
 		end
 	end
@@ -1125,6 +1137,11 @@ function Inventory.SetSlotCount(inv, slots)
 	if type(slots) ~= 'number' then return end
 
 	inv.changed = true
+	-- grid inventories keep whole rows; the player grid size comes from data/grid.lua
+	if Grid.uses(inv.type) then
+		if inv.type == 'player' then return end
+		slots = Grid.roundSlots(slots)
+	end
 	inv.slots = slots
 
 	if inv.player then
@@ -1193,6 +1210,103 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
 		slot = nil
 	end
 
+	-- grid inventory: rotation picked for each new placement (slot -> rotated)
+	local rotations = {}
+	local layout = Grid.layoutOf(inv)
+
+	if layout then
+		local items = inv.items
+		local occupied = Grid.occupancy(items, layout)
+		local used = {}
+		local w, h = Grid.itemSize(item.name)
+
+		---@return boolean, boolean?
+		local function placeable(i)
+			if items[i] or used[i] then return false end
+			if inv.type == 'player' and not Utility.canHold(i, item.name) then return false end
+			if not Grid.isCellOf(layout, i) then return true end
+			if occupied[i] then return false end
+			if Grid.fits(layout, occupied, i, w, h) then return true, false end
+			if w ~= h and Grid.fits(layout, occupied, i, h, w) then return true, true end
+			return false
+		end
+
+		local function take(i, rotated)
+			used[i] = true
+			rotations[i] = rotated or false
+			if Grid.isCellOf(layout, i) then Grid.mark(occupied, layout, i, item.name, rotated) end
+		end
+
+		slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
+
+		if slot and slot >= 1 and slot <= inv.slots then
+			local slotData = items[slot]
+
+			if slotData then
+				if item.stack and slotData.name == item.name and table.matches(slotData.metadata, slotMetadata) then
+					toSlot = slot
+				end
+			else
+				local ok, rotated = placeable(slot)
+
+				if ok then
+					toSlot = slot
+					take(slot, rotated)
+				end
+			end
+		end
+
+		if not toSlot and item.stack then
+			for i = 1, inv.slots do
+				local slotData = items[i]
+
+				if slotData and slotData.name == item.name and table.matches(slotData.metadata, slotMetadata) then
+					toSlot = i
+					break
+				end
+			end
+		end
+
+		if not toSlot then
+			-- the grid first, then the single slots (hotbar / equipment)
+			local order = {}
+
+			for i = layout.first, layout.last do order[#order + 1] = i end
+
+			for i = 1, inv.slots do
+				if not Grid.isCellOf(layout, i) then order[#order + 1] = i end
+			end
+
+			for n = 1, #order do
+				local i = order[n]
+				local ok, rotated = placeable(i)
+
+				if ok then
+					take(i, rotated)
+
+					if item.stack then
+						toSlot = i
+						break
+					end
+
+					if not toSlot then toSlot = {} end
+
+					toSlot[#toSlot + 1] = { slot = i, count = slotCount, metadata = slotMetadata }
+
+					if count == slotCount then
+						break
+					end
+
+					count -= 1
+					slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
+				end
+			end
+		end
+
+		-- skip the slot inventory search below
+		slot = nil
+	end
+
 	if slot then
 		local slotData = inv.items[slot]
 		slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
@@ -1202,7 +1316,7 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
 		end
 	end
 
-	if not toSlot then
+	if not toSlot and not layout then
 		local items = inv.items
 		slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
 
@@ -1241,6 +1355,10 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
 	if toSlotType == 'number' then
 		Inventory.SetSlot(inv, item, slotCount, slotMetadata, toSlot)
 
+		if rotations[toSlot] ~= nil and inv.items[toSlot] then
+			inv.items[toSlot].rotated = rotations[toSlot] or nil
+		end
+
 		if inv.player and server.syncInventory then
 			server.syncInventory(inv)
 		end
@@ -1265,6 +1383,11 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
 			local data = toSlot[i]
 			added += data.count
 			Inventory.SetSlot(inv, item, data.count, data.metadata, data.slot)
+
+			if rotations[data.slot] ~= nil and inv.items[data.slot] then
+				inv.items[data.slot].rotated = rotations[data.slot] or nil
+			end
+
 			toSlot[i] = { item = inv.items[data.slot], inventory = inv.id }
 		end
 
@@ -1514,6 +1637,31 @@ function Inventory.CanCarryItem(inv, item, count, metadata)
 			if not itemSlots then return end
 
 			local weight = metadata and metadata.weight or item.weight
+			local layout = Grid.layoutOf(inv)
+
+			if layout then
+				-- grid inventory: a new stack or each non-stacking item needs a spot it fits in
+				if not count then count = 1 end
+
+				if not (item.stack and next(itemSlots)) then
+					local needed = item.stack and 1 or count
+					local free = Grid.freeSpots(inv, item.name, needed)
+
+					for i = 1, inv.slots do
+						if free >= needed then break end
+
+						if not Grid.isCellOf(layout, i) and not inv.items[i] and not (inv.type == 'player' and not Utility.canHold(i, item.name)) then
+							free += 1
+						end
+					end
+
+					if free < needed then return false end
+				end
+
+				if weight == 0 then return true end
+
+				return inv.weight + (weight * count) <= inv.maxWeight
+			end
 
 			if next(itemSlots) or emptySlots > 0 then
 				if not count then count = 1 end
@@ -1611,6 +1759,7 @@ local function CustomDrop(prefix, items, coords, slots, maxWeight, instance, mod
 	if not inventory then return end
 
 	inventory.items, inventory.weight = generateItems(inventory, 'drop', items)
+	Grid.normalize(inventory)
 	inventory.coords = coords
 	Inventory.Drops[dropId] = {
 		coords = inventory.coords,
@@ -1674,6 +1823,9 @@ local function dropItem(source, playerInventory, fromData, data, owner)
 	toData.slot = data.toSlot
 	toData.count = data.count
 	toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
+
+	-- grid inventory: the drop keeps the rotation it was dropped with (Inventory.Create re-fits it if needed)
+	if data.rotate ~= nil then toData.rotated = data.rotate == true or nil end
 
     if toData.weight > shared.dropweight then return end
 
@@ -1816,6 +1968,26 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 		end
 	end
 
+	-- grid inventory: data.rotate is the rotation the item should have where it lands (nil keeps it)
+	if data.rotate ~= nil then data.rotate = data.rotate == true end
+
+	-- grid inventory: turning an item where it lies
+	if sameInventory and data.fromSlot == data.toSlot and data.toType ~= 'newdrop' and data.rotate ~= nil then
+		local item = toInventory.items[data.toSlot]
+
+		if not item or not Grid.isCell(toInventory, data.toSlot) then return false end
+		if (item.rotated == true) == data.rotate then return true end
+		if not Grid.canPlace(toInventory, data.toSlot, item.name, data.rotate, { [data.toSlot] = true }) then return false end
+
+		item.rotated = data.rotate or nil
+
+		if toInventory.changed ~= nil then toInventory.changed = true end
+
+		toInventory:syncSlotsWithClients({ { item = item, inventory = toInventory.id } }, true)
+
+		return true
+	end
+
 	if toInventory and (data.toType == 'newdrop' or fromInventory ~= toInventory or data.fromSlot ~= data.toSlot) then
 		local fromData = fromInventory.items[data.fromSlot]
 
@@ -1903,7 +2075,14 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 				count = data.count,
 			}
 
+			-- grid inventory: rotation the moved item gets where it lands
+			local rotate = data.rotate
+			if rotate == nil then rotate = fromData.rotated == true end
+
 			if toData and ((toData.name ~= fromData.name) or not toData.stack or (not table.matches(toData.metadata, fromData.metadata))) then
+				-- both items have to fit where the other one was
+				if not Grid.canSwap(fromInventory, data.fromSlot, fromData, toInventory, data.toSlot, toData, rotate) then return false end
+
 				-- Swap items
 				local toWeight = not sameInventory and (toInventory.weight - toData.weight + fromData.weight) or 0
 				local fromWeight = not sameInventory and (fromInventory.weight + toData.weight - fromData.weight) or 0
@@ -1941,6 +2120,7 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 						fromInventory.weight = fromWeight
 						toInventory.weight = toWeight
 						toData, fromData = Inventory.SwapSlots(fromInventory, toInventory, data.fromSlot, data.toSlot) --[[@as table]]
+						toData.rotated = rotate or nil
 
 						if server.loglevel > 0 then
 							lib.logger(playerInventory.owner, 'swapSlots', ('%sx %s transferred from "%s" to "%s" for %sx %s'):format(fromData.count, fromData.name, fromInventory.owner and fromInventory.label or fromInventory.id, toInventory.owner and toInventory.label or toInventory.id, toData.count, toData.name))
@@ -1953,6 +2133,7 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 					if not partiesPresent() then hooks.success = false return end
 
 					toData, fromData = Inventory.SwapSlots(fromInventory, toInventory, data.fromSlot, data.toSlot)
+					toData.rotated = rotate or nil
 				end
 
 			elseif toData and toData.name == fromData.name and table.matches(toData.metadata, fromData.metadata) then
@@ -2002,10 +2183,16 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 					return false, 'cannot_carry'
 				end
 			elseif data.count <= fromData.count then
+				-- grid inventory: the item has to fit at the target, around everything else (itself too when only part moves)
+				local ignore = sameInventory and data.count >= fromData.count and { [data.fromSlot] = true } or nil
+
+				if not Grid.canPlace(toInventory, data.toSlot, fromData.name, rotate, ignore) then return false end
+
 				-- Move item to an empty slot
 				toData = table.clone(fromData)
 				toData.count = data.count
 				toData.slot = data.toSlot
+				toData.rotated = rotate or nil
 				toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
 
 				if (fromInventory.type == 'container' and toInventory == playerInventory) or sameInventory or (toInventory.weight + toData.weight <= toInventory.maxWeight and canCarry(toData.weight)) then
@@ -2297,14 +2484,31 @@ end
 exports('ClearInventory', Inventory.Clear)
 
 ---@param inv inventory
+---@param itemName? string grid inventory: the item that has to fit (a 1x1 item otherwise)
 ---@return integer?
-function Inventory.GetEmptySlot(inv)
+function Inventory.GetEmptySlot(inv, itemName)
 	local inventory = Inventory(inv)
 
 	if not inventory then return end
 
 	local items = inventory.items
 	local isPlayer = inventory.type == 'player'
+	local layout = Grid.layoutOf(inventory)
+
+	if layout then
+		local slot, rotated = Grid.findIn(layout, Grid.occupancy(items, layout), itemName or 'grid:cell')
+
+		-- second value: whether the item only fits rotated there
+		if slot then return slot, rotated end
+
+		for i = 1, inventory.slots do
+			if not Grid.isCellOf(layout, i) and not items[i] and not (isPlayer and Utility.isRestricted(i)) then
+				return i
+			end
+		end
+
+		return
+	end
 
 	for i = 1, inventory.slots do
 		if not items[i] and not (isPlayer and Utility.isRestricted(i)) then
@@ -2329,6 +2533,20 @@ function Inventory.GetSlotForItem(inv, itemName, metadata)
 	local emptySlot
 
 	local isPlayer = inventory.type == 'player'
+
+	if Grid.layoutOf(inventory) then
+		if item.stack then
+			for i = 1, inventory.slots do
+				local slotData = items[i]
+
+				if slotData and slotData.name == item.name and table.matches(slotData.metadata, metadata) then
+					return i
+				end
+			end
+		end
+
+		return Inventory.GetEmptySlot(inventory, item.name)
+	end
 
 	for i = 1, inventory.slots do
 		local slotData = items[i]
@@ -2477,7 +2695,8 @@ local function prepareInventorySave(inv, buffer, time)
                 name = v.name,
                 count = v.count,
                 slot = k,
-                metadata = next(v.metadata) and v.metadata or nil
+                metadata = next(v.metadata) and v.metadata or nil,
+                rotated = v.rotated or nil
             }
         end
 	end

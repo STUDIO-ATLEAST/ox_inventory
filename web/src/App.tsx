@@ -13,6 +13,9 @@ import { fetchNui } from './utils/fetchNui';
 import { useDragDropManager } from 'react-dnd';
 import KeyPress from './components/utils/KeyPress';
 import { setUtility, UtilityConfig } from './store/utility';
+import { GridConfig, setGrid } from './store/grid';
+import { RarityConfig, setRarity } from './store/rarity';
+import { devGridSetup } from './utils/devGrid';
 
 debugData([
   {
@@ -139,6 +142,9 @@ if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('righ
   debugData([{ action: 'setupInventory', data: { rightInventory: devCraftingBench } }]);
 }
 
+// browser preview: rarity examples, and ?grid=1 for the grid inventory
+devGridSetup();
+
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
   const manager = useDragDropManager();
@@ -149,11 +155,15 @@ const App: React.FC = () => {
     leftInventory: Inventory;
     imagepath: string;
     utility?: Partial<UtilityConfig>;
-  }>('init', ({ locale, items, leftInventory, imagepath, utility }) => {
+    grid?: Partial<GridConfig>;
+    rarity?: Partial<RarityConfig>;
+  }>('init', ({ locale, items, leftInventory, imagepath, utility, grid, rarity }) => {
     for (const name in locale) Locale[name] = locale[name];
     for (const name in items) Items[name] = items[name];
 
     setUtility(utility);
+    setGrid(grid);
+    setRarity(rarity);
 
     setImagePath(imagepath);
     dispatch(setupInventory({ leftInventory }));

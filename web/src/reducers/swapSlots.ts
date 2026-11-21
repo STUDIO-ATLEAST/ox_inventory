@@ -9,11 +9,14 @@ export const swapSlotsReducer: CaseReducer<
     fromType: Inventory['type'];
     toSlot: SlotWithItem;
     toType: Inventory['type'];
+    // grid inventory: rotation the dragged item gets at the target (undefined keeps its own)
+    rotate?: boolean;
   }>
 > = (state, action) => {
-  const { fromSlot, fromType, toSlot, toType } = action.payload;
+  const { fromSlot, fromType, toSlot, toType, rotate } = action.payload;
   const { sourceInventory, targetInventory } = getTargetInventory(state, fromType, toType);
   const curTime = Math.floor(Date.now() / 1000);
+  const fromItem = sourceInventory.items[fromSlot.slot - 1];
 
   [sourceInventory.items[fromSlot.slot - 1], targetInventory.items[toSlot.slot - 1]] = [
     {
@@ -22,9 +25,10 @@ export const swapSlotsReducer: CaseReducer<
       durability: itemDurability(toSlot.metadata, curTime),
     },
     {
-      ...sourceInventory.items[fromSlot.slot - 1],
+      ...fromItem,
       slot: toSlot.slot,
       durability: itemDurability(fromSlot.metadata, curTime),
+      rotated: (rotate ?? fromItem.rotated) || undefined,
     },
   ];
 };

@@ -10,4 +10,6 @@ export type DragSource = {
 export type DropTarget = {
   item: Pick<Slot, 'slot'>;
   inventory: Inventory['type'];
+  // grid inventory: rotation the item gets where it lands
+  rotate?: boolean;
 };

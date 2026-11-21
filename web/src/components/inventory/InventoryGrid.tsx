@@ -10,6 +10,8 @@ import { getEquipmentSlot, Utility } from '../../store/utility';
 import UtilityIcon from '../utils/icons/UtilityIcons';
 import { ChevronDown, Weight } from 'lucide-react';
 import PanelHeading, { iconForType } from './PanelHeading';
+import GridInventory from './GridInventory';
+import { gridLayout, isPlayerType } from '../../store/grid';
 
 const PAGE_SIZE = 30;
 
@@ -49,6 +51,9 @@ const InventoryGrid: React.FC<{
   const { ref, entry } = useIntersection({ threshold: 0.5 });
   const isBusy = useAppSelector((state) => state.inventory.isBusy);
   const isPlayer = inventory.type === 'player';
+  const isPlayerLike = isPlayerType(inventory.type);
+  // grid inventory (data/grid.lua): cells instead of slots
+  const layout = useMemo(() => gridLayout(inventory), [inventory.type, inventory.slots]);
   // hotkey and equipment slots live on the utility panel while it is shown
   const items = useMemo(
     () =>
@@ -100,21 +105,25 @@ const InventoryGrid: React.FC<{
           />
           <WeightBar percent={inventory.maxWeight ? (weight / inventory.maxWeight) * 100 : 0} />
         </div>
-        <div className="inventory-grid-container" ref={containerRef}>
-          <>
-            {items.slice(0, (page + 1) * PAGE_SIZE).map((item, index) => (
-              <InventorySlot
-                key={`${inventory.type}-${inventory.id}-${item.slot}`}
-                item={item}
-                ref={index === (page + 1) * PAGE_SIZE - 1 ? ref : null}
-                inventoryType={inventory.type}
-                inventoryGroups={inventory.groups}
-                inventoryId={inventory.id}
-                placeholder={placeholderFor(item.slot)}
-              />
-            ))}
-          </>
-        </div>
+        {layout ? (
+          <GridInventory inventory={inventory} layout={layout} showHotbar={isPlayerLike && !hideHotkeys} />
+        ) : (
+          <div className="inventory-grid-container" ref={containerRef}>
+            <>
+              {items.slice(0, (page + 1) * PAGE_SIZE).map((item, index) => (
+                <InventorySlot
+                  key={`${inventory.type}-${inventory.id}-${item.slot}`}
+                  item={item}
+                  ref={index === (page + 1) * PAGE_SIZE - 1 ? ref : null}
+                  inventoryType={inventory.type}
+                  inventoryGroups={inventory.groups}
+                  inventoryId={inventory.id}
+                  placeholder={placeholderFor(item.slot)}
+                />
+              ))}
+            </>
+          </div>
+        )}
       </div>
     </>
   );

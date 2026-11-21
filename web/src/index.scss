@@ -161,14 +161,6 @@ input[type='number']::-webkit-outer-spin-button {
   }
 }
 
-.tooltip-description {
-  padding-top: 5px;
-}
-
-.tooltip-markdown > p {
-  margin: 0;
-}
-
 button:active {
   transform: translateY(1px);
 }
@@ -790,63 +782,7 @@ body.inv-dragging {
   }
 }
 
-.tooltip-wrapper {
-  z-index: 100;
-  pointer-events: none;
-  display: flex;
-  background-color: #2c2e33;
-  width: 220px;
-  padding: 10px;
-  flex-direction: column;
-  min-width: 200px;
-  color: $text;
-  font-family: $mainFont;
-  border-radius: $radiusSm;
-  border: 1px solid $surfaceHover;
-  box-shadow: $shadow;
-  p {
-    font-size: 12px;
-    font-weight: 400;
-  }
-}
-
-.tooltip-header-wrapper {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  p {
-    font-size: 14px;
-    font-weight: 600;
-    color: $white;
-  }
-}
-
-.tooltip-crafting-duration {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  p {
-    font-size: 13px;
-  }
-}
-
-.tooltip-ingredients {
-  padding-top: 5px;
-}
-
-.tooltip-ingredient {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  img {
-    width: 28px;
-    height: 28px;
-    padding-right: 5px;
-  }
-}
+// tooltip styles live in tooltip.scss
 
 // ---------------------------------------------------------------------------
 // Utility / character panel
@@ -1154,3 +1090,5 @@ body.inv-dragging {
 @import './tabs';
 @import './shop';
 @import './crafting';
+@import './grid';
+@import './tooltip';

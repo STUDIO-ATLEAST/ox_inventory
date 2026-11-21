@@ -240,12 +240,13 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 						end
 
 						if invSlot.count > 1 then
-							local emptySlot = Inventory.GetEmptySlot(left)
+							local emptySlot, rotated = Inventory.GetEmptySlot(left, invSlot.name)
 
 							if emptySlot then
 								local ok, newItem = Inventory.SetSlot(left, item, 1, table.deepclone(invSlot.metadata), emptySlot)
 
 								if ok and newItem then
+									newItem.rotated = rotated or nil
                                     Items.UpdateDurability(left, newItem --[[@as SlotWithItem]], item, durability < 0 and 0 or durability)
 								end
 							end

@@ -18,6 +18,8 @@ import { Items } from '../../store/items';
 import { Locale } from '../../store/locale';
 import { canPurchaseItem, getItemUrl, isSlotWithItem } from '../../helpers';
 import { canHoldItem, getEquipmentSlot } from '../../store/utility';
+import { findSpot, usesGrid } from '../../store/grid';
+import { getRarity } from '../../store/rarity';
 import { getPayment, PaymentMethod, setPayment } from '../../store/shop';
 import { buyItem } from '../../thunks/buyItem';
 import { fetchNui } from '../../utils/fetchNui';
@@ -57,6 +59,12 @@ const findTargetSlot = (name: string) => {
     if (stack) return stack.slot;
   }
 
+  // grid inventory: a spot the whole item fits in (the server double-checks and picks another if needed)
+  if (usesGrid(pockets.type)) {
+    const spot = findSpot(pockets, name);
+    if (spot) return spot.slot;
+  }
+
   const free = (regularOnly: boolean) =>
     pockets.items.find(
       (slot) =>
@@ -78,6 +86,7 @@ const ProductCard: React.FC<{
   const soldOut = item.count !== undefined && item.count <= 0;
   const left = item.count !== undefined ? item.count - inBasket : undefined;
   const disabled = !allowed || soldOut || (left !== undefined && left <= 0);
+  const rarity = getRarity(item);
 
   // products can still be dragged straight onto a pocket slot, like the ox shop grid
   const [{ isDragging }, drag] = useDrag<DragSource, void, { isDragging: boolean }>(
@@ -97,8 +106,8 @@ const ProductCard: React.FC<{
   return (
     <button
       ref={(element) => { drag(element); }}
-      className={`product-card${disabled ? ' disabled' : ''}${inBasket ? ' picked' : ''}`}
-      style={{ opacity: isDragging ? 0.4 : undefined }}
+      className={`product-card${disabled ? ' disabled' : ''}${inBasket ? ' picked' : ''}${rarity?.tinted ? ' rarity' : ''}`}
+      style={{ ...rarity?.vars, opacity: isDragging ? 0.4 : undefined }}
       onClick={() => !disabled && onAdd()}
     >
       <span className="product-top">
